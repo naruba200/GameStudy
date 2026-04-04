@@ -10,7 +10,7 @@ public class SafeDialController : MonoBehaviour
     private int currentNumber = 0;
 
     [Header("Code Settings")]
-    public List<int> correctCode = new List<int>() { 3, 7, 1, 5 }; // CHANGE THIS
+    public List<int> correctCode = new List<int>() { 3, 7, 1, 5 };
     private List<int> playerInput = new List<int>();
 
     [Header("Safe Parts")]
@@ -34,15 +34,15 @@ public class SafeDialController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.A))
         {
-            // Rotate left
+            // Rotate left (clockwise visually)
             dial.Rotate(0, 0, rotationStep);
-            currentNumber = (currentNumber + 1) % 10; // wrap backward
+            currentNumber = (currentNumber + 1) % 10;
             Debug.Log("Current Number: " + currentNumber);
         }
 
         if (Input.GetKeyDown(KeyCode.S))
         {
-            // Rotate right
+            // Rotate right (counterclockwise visually)
             dial.Rotate(0, 0, -rotationStep);
             currentNumber = (currentNumber + 9) % 10;
             Debug.Log("Current Number: " + currentNumber);
@@ -54,7 +54,14 @@ public class SafeDialController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Return))
         {
             playerInput.Add(currentNumber);
-            Debug.Log("Entered: " + currentNumber);
+
+            // Keep only last N inputs (sliding window)
+            if (playerInput.Count > correctCode.Count)
+            {
+                playerInput.RemoveAt(0);
+            }
+
+            Debug.Log("Sequence: " + string.Join(" ", playerInput));
 
             if (playerInput.Count == correctCode.Count)
             {
@@ -69,9 +76,7 @@ public class SafeDialController : MonoBehaviour
         {
             if (playerInput[i] != correctCode[i])
             {
-                Debug.Log("Wrong Code!");
-                playerInput.Clear();
-                return;
+                return; // allow brute force (no reset)
             }
         }
 
