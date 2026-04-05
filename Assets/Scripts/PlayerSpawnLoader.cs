@@ -41,10 +41,10 @@ public class PlayerSpawnLoader : MonoBehaviour
             string spawnPointId = PlayerPrefs.GetString("SpawnPointId", string.Empty);
             if (!hasPendingSpawn && string.IsNullOrEmpty(spawnPointId))
             {
-                PlayerController playerController = player.GetComponent<PlayerController>();
-                if (playerController != null)
+                PlayerController scenePlayerController = player.GetComponent<PlayerController>();
+                if (scenePlayerController != null)
                 {
-                    playerController.ResumeMovement();
+                    scenePlayerController.ResumeMovement();
                 }
 
                 return;
