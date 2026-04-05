@@ -4,7 +4,6 @@ using UnityEngine;
 public class PlaytimeTracker : MonoBehaviour
 {
     [SerializeField] private TMP_Text playtimeText;
-    [SerializeField] private bool useUnscaledTime = true;
 
     private void Update()
     {
@@ -13,7 +12,7 @@ public class PlaytimeTracker : MonoBehaviour
             return;
         }
 
-        float elapsedSeconds = useUnscaledTime ? Time.unscaledTime : Time.time;
+        float elapsedSeconds = SessionPlaytime.GetSeconds();
         int totalMinutes = Mathf.FloorToInt(elapsedSeconds / 60f);
         int hours = totalMinutes / 60;
         int minutes = totalMinutes % 60;

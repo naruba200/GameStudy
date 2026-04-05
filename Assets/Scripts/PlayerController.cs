@@ -185,6 +185,37 @@ public class PlayerController : MonoBehaviour
         return snapshot;
     }
 
+    public void RestoreInventorySnapshot(List<InventoryItemEntry> snapshot)
+    {
+        inventory.Clear();
+        pickupSequence = 0;
+
+        if (snapshot != null)
+        {
+            foreach (InventoryItemEntry entry in snapshot)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.displayName) || entry.amount <= 0)
+                {
+                    continue;
+                }
+
+                inventory.Add(entry.Clone());
+                if (entry.lastAcquiredOrder > pickupSequence)
+                {
+                    pickupSequence = entry.lastAcquiredOrder;
+                }
+            }
+        }
+
+        UpdateInventoryText();
+        OnInventoryChanged?.Invoke();
+    }
+
+    public Vector2 GetCurrentPosition2D()
+    {
+        return transform.position;
+    }
+
     private void UpdateInventoryText()
     {
         if (inventoryText == null)

@@ -11,6 +11,24 @@ public class Screen : MonoBehaviour
         hasStartedThisSession = false;
     }
 
+    public static void PrepareForStartMenuReturn()
+    {
+        hasStartedThisSession = false;
+        autoStartDialogueOnLoad = false;
+
+        PlayerPrefs.SetInt("HasPendingSpawn", 0);
+        PlayerPrefs.DeleteKey("SpawnPointId");
+        PlayerPrefs.DeleteKey("SpawnX");
+        PlayerPrefs.DeleteKey("SpawnY");
+        PlayerPrefs.Save();
+
+        SessionPlaytime.Reset();
+        SaveGameService.ClearPendingLoadState();
+
+        InventoryToggleUI.ResetPersistentInstance();
+        PlayerPersist.ResetPersistentInstance();
+    }
+
     // Tên scene (set trong Inspector)
     public string gameSceneName = "Game";
     public string menuSceneName = "MainMenu";
@@ -52,7 +70,17 @@ public class Screen : MonoBehaviour
         }
         else
         {
+            if (startScreen != null)
+            {
+                startScreen.SetActive(true);
+            }
+
             Time.timeScale = 1f;
+        }
+
+        if (pauseGameWhenStartScreenVisible && startScreen != null && startScreen.activeSelf)
+        {
+            Time.timeScale = 0f;
         }
 
         ApplyInventoryVisibilityForCurrentScreen();
@@ -63,6 +91,11 @@ public class Screen : MonoBehaviour
     {
         hasStartedThisSession = true;
         Time.timeScale = 1f;
+
+        if (startScreen != null)
+        {
+            startScreen.SetActive(false);
+        }
 
         if (resetGameStateOnStart)
         {
@@ -75,12 +108,50 @@ public class Screen : MonoBehaviour
             return;
         }
 
+        TryStartDialogue();
+    }
+
+    public void ContinueGame()
+    {
+        if (!SaveGameService.TryPrepareContinue(out string sceneToLoad))
+        {
+            Debug.LogWarning("Continue requested but no valid save was found. Falling back to StartGame.");
+            StartGame();
+            return;
+        }
+
+        hasStartedThisSession = true;
+        autoStartDialogueOnLoad = false;
+        Time.timeScale = 1f;
+
         if (startScreen != null)
         {
             startScreen.SetActive(false);
         }
 
-        TryStartDialogue();
+        InventoryToggleUI inventoryToggle = Object.FindFirstObjectByType<InventoryToggleUI>();
+        if (inventoryToggle != null)
+        {
+            inventoryToggle.SetInventoryAccess(true);
+        }
+
+        PlayerController player = PlayerPersist.GetPlayerController();
+        if (player != null)
+        {
+            player.ResumeMovement();
+        }
+
+        ApplyInventoryVisibilityForCurrentScreen();
+        SceneLoadingOverlay.LoadScene(sceneToLoad, loadingFont);
+    }
+
+    public void SaveGameNow()
+    {
+        bool saved = SaveGameService.SaveCurrentGame();
+        if (!saved)
+        {
+            Debug.LogWarning("SaveGameNow failed.");
+        }
     }
 
     // Retry - chơi lại
@@ -111,6 +182,10 @@ public class Screen : MonoBehaviour
         PlayerPrefs.DeleteKey("SpawnX");
         PlayerPrefs.DeleteKey("SpawnY");
         PlayerPrefs.Save();
+
+        SessionPlaytime.Reset();
+        GameWorldState.Reset();
+        SaveGameService.ClearPendingLoadState();
 
         InventoryToggleUI.ResetPersistentInstance();
         PlayerPersist.ResetPersistentInstance();

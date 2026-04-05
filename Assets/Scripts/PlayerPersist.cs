@@ -18,6 +18,13 @@ public class PlayerPersist : MonoBehaviour
         instance = null;
     }
 
+    public static PlayerPersist Instance => instance;
+
+    public static PlayerController GetPlayerController()
+    {
+        return instance != null ? instance.GetComponent<PlayerController>() : null;
+    }
+
     void Awake()
     {
         if (instance != null)

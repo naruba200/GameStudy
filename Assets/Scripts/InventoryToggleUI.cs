@@ -13,6 +13,12 @@ public class InventoryToggleUI : MonoBehaviour
     [SerializeField] private GameObject saveUIPanel;
     [SerializeField] private Image generalUIIconImage;
     [SerializeField] private TMP_Text generalUINameText;
+    [SerializeField] private TMP_Text saveStatusText;
+    [SerializeField] private TMP_Text saveResultText;
+    [SerializeField] private TMP_Text saveSlotNameText;
+    [SerializeField] private TMP_Text savePlaytimeText;
+    [SerializeField] private TMP_Text saveDateText;
+    [SerializeField] private Image savePreviewImage;
 
     [Header("Player")]
     [SerializeField] private PlayerController player;
@@ -41,6 +47,7 @@ public class InventoryToggleUI : MonoBehaviour
     private bool wasDialogueActive;
     private Sprite resolvedPlayerIcon;
     private bool hasResolvedPlayerIcon;
+    private bool lastSaveSucceeded;
 
     public static void ResetPersistentInstance()
     {
@@ -269,6 +276,30 @@ public class InventoryToggleUI : MonoBehaviour
         {
             saveUIPanel.SetActive(true);
         }
+
+        RefreshSavePreviewUI();
+        SaveCurrentGame();
+    }
+
+    public void SaveCurrentGame()
+    {
+        bool saved = SaveGameService.SaveCurrentGame();
+        UpdateSaveStatusText(saved);
+        RefreshSavePreviewUI();
+        if (!saved)
+        {
+            Debug.LogWarning("SaveCurrentGame from InventoryToggleUI failed.");
+        }
+    }
+
+    public void SaveFromUIButton()
+    {
+        SaveCurrentGame();
+    }
+
+    public void CloseSaveUI()
+    {
+        ShowGeneralUI();
     }
 
     private void TryResolveReferences()
@@ -296,6 +327,15 @@ public class InventoryToggleUI : MonoBehaviour
         if (saveUIPanel == null)
         {
             saveUIPanel = FindInLoadedScenesByName("SaveUI");
+        }
+
+        if (player == null)
+        {
+            PlayerController persistentPlayer = PlayerPersist.GetPlayerController();
+            if (persistentPlayer != null)
+            {
+                player = persistentPlayer;
+            }
         }
 
         if (player == null)
@@ -353,6 +393,56 @@ public class InventoryToggleUI : MonoBehaviour
                 if (nameTransform != null)
                 {
                     generalUINameText = nameTransform.GetComponent<TMP_Text>();
+                }
+            }
+        }
+
+        if (saveUIPanel != null && saveStatusText == null)
+        {
+            Transform saveStatusTransform = saveUIPanel.transform.Find("ItemName");
+            if (saveStatusTransform != null)
+            {
+                saveStatusText = saveStatusTransform.GetComponent<TMP_Text>();
+            }
+        }
+
+        if (saveUIPanel != null && saveResultText == null)
+        {
+            Transform saveResultTransform = saveUIPanel.transform.Find("SaveResultText");
+            if (saveResultTransform != null)
+            {
+                saveResultText = saveResultTransform.GetComponent<TMP_Text>();
+            }
+        }
+
+        if (saveUIPanel != null)
+        {
+            EnsureSaveSlotVisuals();
+
+            if (savePlaytimeText == null)
+            {
+                Transform playtimeTransform = saveUIPanel.transform.Find("SavePlaytimeText");
+                if (playtimeTransform != null)
+                {
+                    savePlaytimeText = playtimeTransform.GetComponent<TMP_Text>();
+                }
+            }
+
+            if (saveDateText == null)
+            {
+                Transform dateTransform = saveUIPanel.transform.Find("SaveDateText");
+                if (dateTransform != null)
+                {
+                    saveDateText = dateTransform.GetComponent<TMP_Text>();
+                }
+            }
+
+            if (savePreviewImage == null)
+            {
+                Transform imageTransform = saveUIPanel.transform.Find("SaveImage");
+                if (imageTransform != null)
+                {
+                    savePreviewImage = imageTransform.GetComponent<Image>();
                 }
             }
         }
@@ -592,5 +682,300 @@ public class InventoryToggleUI : MonoBehaviour
     private bool IsStartScreenVisible()
     {
         return screen != null && screen.startScreen != null && screen.startScreen.activeInHierarchy;
+    }
+
+    private void UpdateSaveStatusText(bool saved)
+    {
+        lastSaveSucceeded = saved;
+
+        SaveGameService.SavePreview preview = SaveGameService.GetSavePreview();
+
+        if (saveSlotNameText != null)
+        {
+            saveSlotNameText.text = ">File1";
+        }
+
+        if (savePlaytimeText != null)
+        {
+            savePlaytimeText.text = preview.playtimeText;
+        }
+
+        if (saveDateText != null)
+        {
+            saveDateText.text = preview.savedAtText;
+        }
+
+        if (saveStatusText == null)
+        {
+            UpdateSaveResultText(saved);
+            return;
+        }
+
+        if (saveSlotNameText != null || savePlaytimeText != null || saveDateText != null)
+        {
+            if (saveStatusText != saveSlotNameText)
+            {
+                saveStatusText.text = string.Empty;
+            }
+
+            UpdateSaveResultText(saved);
+            return;
+        }
+
+        saveStatusText.text = BuildSaveStatusMessage(preview, saved);
+        UpdateSaveResultText(saved);
+    }
+
+    private void RefreshSavePreviewUI()
+    {
+        SaveGameService.SavePreview preview = SaveGameService.GetSavePreview();
+
+        if (savePlaytimeText != null)
+        {
+            savePlaytimeText.text = preview.playtimeText;
+        }
+
+        if (saveDateText != null)
+        {
+            saveDateText.text = preview.savedAtText;
+        }
+
+        if (saveSlotNameText != null)
+        {
+            saveSlotNameText.text = ">File1";
+        }
+
+        if (saveStatusText != null && (savePlaytimeText == null || saveDateText == null))
+        {
+            saveStatusText.text = BuildSaveStatusMessage(preview, lastSaveSucceeded);
+        }
+
+        if (savePreviewImage != null)
+        {
+            Sprite slotIcon = ResolveCurrentSaveIcon();
+            savePreviewImage.sprite = slotIcon;
+            savePreviewImage.enabled = preview.hasData && slotIcon != null;
+        }
+    }
+
+    private string BuildSaveStatusMessage(SaveGameService.SavePreview preview, bool saved)
+    {
+        if (!saved)
+        {
+            return "Luu game that bai";
+        }
+
+        if (!preview.hasData)
+        {
+            return "Luu game thanh cong";
+        }
+
+        return "Luu game thanh cong\n" + preview.playtimeText + "\n" + preview.savedAtText;
+    }
+
+    private void EnsureSaveSlotVisuals()
+    {
+        if (saveUIPanel == null)
+        {
+            return;
+        }
+
+        if (saveSlotNameText == null)
+        {
+            if (saveStatusText != null)
+            {
+                saveSlotNameText = saveStatusText;
+            }
+            else
+            {
+                Transform fileNameTransform = saveUIPanel.transform.Find("SaveFileText");
+                if (fileNameTransform != null)
+                {
+                    saveSlotNameText = fileNameTransform.GetComponent<TMP_Text>();
+                }
+            }
+        }
+
+        if (saveSlotNameText == null)
+        {
+            saveSlotNameText = CreateSaveText(
+                saveUIPanel.transform,
+                "SaveFileText",
+                new Vector2(-215f, 165f),
+                new Vector2(200f, 44f),
+                TextAlignmentOptions.MidlineLeft,
+                24f);
+        }
+
+        if (savePlaytimeText == null)
+        {
+            Transform playtimeTransform = saveUIPanel.transform.Find("SavePlaytimeText");
+            if (playtimeTransform != null)
+            {
+                savePlaytimeText = playtimeTransform.GetComponent<TMP_Text>();
+            }
+        }
+
+        if (savePlaytimeText == null)
+        {
+            savePlaytimeText = CreateSaveText(
+                saveUIPanel.transform,
+                "SavePlaytimeText",
+                new Vector2(170f, 165f),
+                new Vector2(180f, 46f),
+                TextAlignmentOptions.MidlineRight,
+                30f);
+        }
+
+        if (saveDateText == null)
+        {
+            Transform dateTransform = saveUIPanel.transform.Find("SaveDateText");
+            if (dateTransform != null)
+            {
+                saveDateText = dateTransform.GetComponent<TMP_Text>();
+            }
+        }
+
+        if (saveDateText == null)
+        {
+            saveDateText = CreateSaveText(
+                saveUIPanel.transform,
+                "SaveDateText",
+                new Vector2(170f, 120f),
+                new Vector2(230f, 40f),
+                TextAlignmentOptions.MidlineRight,
+                20f);
+        }
+
+        if (savePreviewImage == null)
+        {
+            Transform imageTransform = saveUIPanel.transform.Find("SaveImage");
+            if (imageTransform != null)
+            {
+                savePreviewImage = imageTransform.GetComponent<Image>();
+            }
+        }
+
+        if (savePreviewImage == null)
+        {
+            GameObject imageObject = new GameObject("SaveImage", typeof(RectTransform), typeof(Image));
+            imageObject.transform.SetParent(saveUIPanel.transform, false);
+
+            RectTransform imageRect = imageObject.GetComponent<RectTransform>();
+            imageRect.anchorMin = new Vector2(0.5f, 0.5f);
+            imageRect.anchorMax = new Vector2(0.5f, 0.5f);
+            imageRect.pivot = new Vector2(0.5f, 0.5f);
+            imageRect.anchoredPosition = new Vector2(0f, 160f);
+            imageRect.sizeDelta = new Vector2(54f, 68f);
+
+            savePreviewImage = imageObject.GetComponent<Image>();
+            savePreviewImage.preserveAspect = true;
+            savePreviewImage.raycastTarget = false;
+        }
+
+        if (saveResultText == null)
+        {
+            saveResultText = CreateSaveText(
+                saveUIPanel.transform,
+                "SaveResultText",
+                new Vector2(0f, -190f),
+                new Vector2(520f, 40f),
+                TextAlignmentOptions.Center,
+                20f);
+        }
+
+        ConfigureSaveTextRect(saveResultText, new Vector2(0f, -190f), new Vector2(520f, 40f), TextAlignmentOptions.Center, 20f);
+
+        ConfigureSaveTextRect(saveSlotNameText, new Vector2(-215f, 165f), new Vector2(200f, 44f), TextAlignmentOptions.MidlineLeft, 24f);
+        ConfigureSaveTextRect(savePlaytimeText, new Vector2(170f, 165f), new Vector2(180f, 46f), TextAlignmentOptions.MidlineRight, 30f);
+        ConfigureSaveTextRect(saveDateText, new Vector2(170f, 120f), new Vector2(230f, 40f), TextAlignmentOptions.MidlineRight, 20f);
+
+        if (saveSlotNameText != null)
+        {
+            saveSlotNameText.fontSize = 26f;
+        }
+    }
+
+    private Sprite ResolveCurrentSaveIcon()
+    {
+        Sprite sprite = resolvedPlayerIcon;
+        if (sprite != null)
+        {
+            return sprite;
+        }
+
+        ResolvePlayerIcon();
+        if (resolvedPlayerIcon != null)
+        {
+            return resolvedPlayerIcon;
+        }
+
+        if (!string.IsNullOrWhiteSpace(playerSpriteObjectName))
+        {
+            GameObject source = FindInLoadedScenesByName(playerSpriteObjectName);
+            if (TryResolveSpriteFromObject(source, out Sprite fromNamedObject))
+            {
+                return fromNamedObject;
+            }
+        }
+
+        if (playerSpriteRenderer != null)
+        {
+            return playerSpriteRenderer.sprite;
+        }
+
+        return null;
+    }
+
+    private TMP_Text CreateSaveText(Transform parent, string objectName, Vector2 anchoredPosition, Vector2 sizeDelta, TextAlignmentOptions alignment, float fontSize)
+    {
+        GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(parent, false);
+
+        TMP_Text text = textObject.GetComponent<TMP_Text>();
+        text.raycastTarget = false;
+        text.color = Color.white;
+
+        if (saveStatusText != null && saveStatusText.font != null)
+        {
+            text.font = saveStatusText.font;
+        }
+
+        ConfigureSaveTextRect(text, anchoredPosition, sizeDelta, alignment, fontSize);
+        return text;
+    }
+
+    private void ConfigureSaveTextRect(TMP_Text text, Vector2 anchoredPosition, Vector2 sizeDelta, TextAlignmentOptions alignment, float fontSize)
+    {
+        if (text == null)
+        {
+            return;
+        }
+
+        RectTransform rect = text.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = sizeDelta;
+
+        text.alignment = alignment;
+        text.fontSize = fontSize;
+        text.enableWordWrapping = false;
+        text.enableAutoSizing = true;
+        text.fontSizeMax = fontSize;
+        text.fontSizeMin = Mathf.Max(14f, fontSize - 8f);
+        text.overflowMode = TextOverflowModes.Ellipsis;
+    }
+
+    private void UpdateSaveResultText(bool saved)
+    {
+        if (saveResultText == null)
+        {
+            return;
+        }
+
+        saveResultText.text = saved ? "Luu game thanh cong" : "Luu game that bai";
+        saveResultText.color = saved ? new Color(0.75f, 1f, 0.75f, 1f) : new Color(1f, 0.7f, 0.7f, 1f);
     }
 }
