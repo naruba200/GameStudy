@@ -961,7 +961,7 @@ public class InventoryToggleUI : MonoBehaviour
 
         text.alignment = alignment;
         text.fontSize = fontSize;
-        text.enableWordWrapping = false;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
         text.enableAutoSizing = true;
         text.fontSizeMax = fontSize;
         text.fontSizeMin = Mathf.Max(14f, fontSize - 8f);
