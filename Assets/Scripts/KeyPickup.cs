@@ -9,7 +9,10 @@ public class KeyPickup : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            PlayerInventory.Instance.SetKey(true);
+            if (PlayerInventory.Instance != null)
+            {
+                PlayerInventory.Instance.SetKey(true);
+            }
 
             if (dialogueManager != null && pickupDialogue.Length > 0)
             {

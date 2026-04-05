@@ -19,7 +19,7 @@ public class SelectionMenuOption : MonoBehaviour, IPointerClickHandler, IPointer
     [SerializeField] private GameObject generalPanel;
     [SerializeField] private GameObject inventoryPanel;
     [SerializeField] private GameObject savePanel;
-    [SerializeField] private string menuSceneName = "MainMenu";
+    [SerializeField] private string menuSceneName = "Outside";
     [SerializeField] private string fallbackStartSceneName = "Outside";
     [SerializeField] private float framePadding = 2f;
     [SerializeField] private float frameThickness = 2f;

@@ -16,7 +16,10 @@ public class PlayerController : MonoBehaviour
 
     private Vector2 input;
     private Animator animator;
+
     private readonly List<InventoryItemEntry> inventory = new List<InventoryItemEntry>();
+    private readonly List<CollectibleItem> collectedItems = new List<CollectibleItem>(); // ✅ NEW
+
     private int pickupSequence;
 
     public event Action OnInventoryChanged;
@@ -62,6 +65,7 @@ public class PlayerController : MonoBehaviour
         {
             TryPickupItem();
         }
+
         if (!isMoving)
         {
             input.x = Input.GetAxisRaw("Horizontal");
@@ -80,6 +84,7 @@ public class PlayerController : MonoBehaviour
                     StartCoroutine(Move(targetPos));
             }
         }
+
         animator.SetBool("isMoving", isMoving);
     }
 
@@ -87,14 +92,13 @@ public class PlayerController : MonoBehaviour
     {
         isMoving = true;
 
-        while ((targetPos - transform.position).sqrMagnitude > Mathf.Epsilon)   
+        while ((targetPos - transform.position).sqrMagnitude > Mathf.Epsilon)
         {
             transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
             yield return null;
         }
 
         transform.position = targetPos;
-
         isMoving = false;
     }
 
@@ -128,6 +132,15 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // ✅ CALLED BY CollectibleItem
+    public void RegisterCollectedItem(CollectibleItem item)
+    {
+        if (item != null)
+        {
+            collectedItems.Add(item);
+        }
+    }
+
     public void AddItem(string itemName, int amount, bool stackable, Sprite icon)
     {
         if (string.IsNullOrWhiteSpace(itemName) || amount <= 0)
@@ -143,6 +156,7 @@ public class PlayerController : MonoBehaviour
             {
                 existingEntry.amount += amount;
                 existingEntry.lastAcquiredOrder = ++pickupSequence;
+
                 if (existingEntry.icon == null)
                 {
                     existingEntry.icon = icon;
@@ -163,7 +177,55 @@ public class PlayerController : MonoBehaviour
 
         UpdateInventoryText();
         OnInventoryChanged?.Invoke();
-        Debug.Log("Picked up " + itemName + " x" + amount + (stackable ? " (stackable)" : " (non-stackable)"));
+        Debug.Log("Picked up " + itemName + " x" + amount);
+    }
+
+    // ✅ NEW (used by DoorInteraction)
+    public bool HasItem(CollectibleItem item, int amount = 1)
+    {
+        if (item == null) return false;
+
+        int count = 0;
+
+        foreach (var collected in collectedItems)
+        {
+            if (collected == item)
+            {
+                count++;
+                if (count >= amount)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    // (OLD string version kept for UI/system compatibility)
+    public bool HasItem(string itemName, int amount = 1)
+    {
+        if (string.IsNullOrWhiteSpace(itemName))
+        {
+            return false;
+        }
+
+        int requiredAmount = Mathf.Max(1, amount);
+        int ownedAmount = 0;
+
+        foreach (InventoryItemEntry entry in inventory)
+        {
+            if (entry != null && entry.displayName != null && 
+                string.Equals(entry.displayName, itemName, System.StringComparison.OrdinalIgnoreCase))
+            {
+                ownedAmount += Mathf.Max(1, entry.amount);
+
+                if (ownedAmount >= requiredAmount)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public List<InventoryItemEntry> GetInventorySnapshot()
@@ -179,7 +241,7 @@ public class PlayerController : MonoBehaviour
         return snapshot;
     }
 
-    public void RestoreInventorySnapshot(List<InventoryItemEntry> snapshot)     
+    public void RestoreInventorySnapshot(List<InventoryItemEntry> snapshot)
     {
         inventory.Clear();
         pickupSequence = 0;
@@ -194,6 +256,7 @@ public class PlayerController : MonoBehaviour
                 }
 
                 inventory.Add(entry.Clone());
+
                 if (entry.lastAcquiredOrder > pickupSequence)
                 {
                     pickupSequence = entry.lastAcquiredOrder;
@@ -226,13 +289,13 @@ public class PlayerController : MonoBehaviour
         StringBuilder builder = new StringBuilder();
         builder.AppendLine("Inventory:");
 
-        List<InventoryItemEntry> sortedInventory = GetInventorySnapshot();      
+        List<InventoryItemEntry> sortedInventory = GetInventorySnapshot();
 
         foreach (InventoryItemEntry entry in sortedInventory)
         {
             if (entry.stackable && entry.amount > 1)
             {
-                builder.AppendLine(entry.displayName + " x" + entry.amount);    
+                builder.AppendLine(entry.displayName + " x" + entry.amount);
             }
             else
             {

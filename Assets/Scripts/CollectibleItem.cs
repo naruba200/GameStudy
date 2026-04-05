@@ -11,6 +11,11 @@ public class CollectibleItem : MonoBehaviour
     [SerializeField] private bool stackable = true;
     [SerializeField] private Sprite icon;
 
+    public string ItemName => itemName;
+    public int Amount => amount;
+    public bool Stackable => stackable;
+    public Sprite Icon => icon;
+
     private SpriteRenderer cachedSpriteRenderer;
 
     private void Reset()
@@ -48,6 +53,7 @@ public class CollectibleItem : MonoBehaviour
             return;
         }
 
+        // Ensure icon is set
         if (icon == null)
         {
             SpriteRenderer spriteRenderer = cachedSpriteRenderer != null ? cachedSpriteRenderer : GetComponent<SpriteRenderer>();
@@ -57,9 +63,16 @@ public class CollectibleItem : MonoBehaviour
             }
         }
 
+        // ✅ NEW: Register item reference for door/key system
+        player.RegisterCollectedItem(this);
+
+        // Existing inventory system (UI, stacking, etc.)
         player.AddItem(itemName, amount, stackable, icon);
+
+        // Save collected state
         GameWorldState.MarkCollected(GetSaveId());
 
+        // Show pickup message
         DialogueManager dialogueManager = Object.FindFirstObjectByType<DialogueManager>();
         if (dialogueManager != null)
         {

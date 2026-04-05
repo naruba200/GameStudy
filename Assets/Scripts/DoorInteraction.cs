@@ -6,6 +6,10 @@ public class DoorInteraction : MonoBehaviour
     public DialogueManager dialogueManager;
     public SceneTransition sceneTransition;
 
+    [Header("Required Collectible")]
+    [Tooltip("Enter the item name (string) that unlocks this door. E.g., 'key2'")]
+    [SerializeField] private string requiredItemName = "key2";
+
     [Header("Dialogue")]
     [TextArea] public string[] lockedLines;
     [TextArea] public string[] unlockedLines;
@@ -18,13 +22,18 @@ public class DoorInteraction : MonoBehaviour
 
     private float interactCooldown = 0f;
 
+    private void Awake()
+    {
+        // Nothing special needed
+    }
+
     void Update()
     {
         if (!playerInRange) return;
 
         bool isDialogueActive = dialogueManager != null && dialogueManager.isDialogueActive;
 
-        // Prevent the same E press that closes dialogue from reopening it or triggering the door.
+        // Prevent instant retrigger after dialogue closes
         if (wasDialogueActive && !isDialogueActive)
         {
             wasDialogueActive = isDialogueActive;
@@ -33,51 +42,94 @@ public class DoorInteraction : MonoBehaviour
 
         wasDialogueActive = isDialogueActive;
 
-        // ⏱ Cooldown to prevent instant retrigger after dialogue ends
+        // Cooldown
         if (interactCooldown > 0f)
         {
             interactCooldown -= Time.unscaledDeltaTime;
             return;
         }
 
-        // 🛑 Don't interrupt dialogue
+        // Don't interrupt dialogue
         if (isDialogueActive) return;
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            interactCooldown = 0.2f; // 👈 KEY FIX
+            interactCooldown = 0.2f;
 
-            // 🚪 Inside door (no dialogue at all)
+            // 🔒 LOCKED
+            if (!HasRequiredKey())
+            {
+                if (dialogueManager != null && lockedLines.Length > 0)
+                {
+                    StartCoroutine(StartDialogueNextFrame(lockedLines));
+                }
+                return;
+            }
+
+            // 🔓 HAS KEY
+
             if (skipDialogue)
             {
-                sceneTransition.TriggerTransition();
+                if (sceneTransition != null)
+                {
+                    sceneTransition.TriggerTransition();
+                }
                 return;
             }
 
-            // ❌ NO KEY → show locked dialogue (repeatable)
-            if (!PlayerInventory.Instance.hasKey)
-            {
-                StartCoroutine(StartDialogueNextFrame(lockedLines));
-                return;
-            }
-
-            // ✅ FIRST TIME WITH KEY → show unlock dialogue ONCE
+            // First time → unlock dialogue
             if (!hasShownUnlockDialogue)
             {
                 hasShownUnlockDialogue = true;
 
-                StartCoroutine(StartDialogueNextFrame(unlockedLines));
+                if (dialogueManager != null && unlockedLines.Length > 0)
+                {
+                    StartCoroutine(StartDialogueNextFrame(unlockedLines));
+                }
                 return;
             }
 
-            // ✅ AFTER THAT → open door
-            sceneTransition.TriggerTransition();
+            // 🚪 Open door
+            if (sceneTransition != null)
+            {
+                sceneTransition.TriggerTransition();
+            }
         }
+    }
+
+    private bool HasRequiredKey()
+    {
+        // ❗ Check if required item name is set
+        if (string.IsNullOrEmpty(requiredItemName))
+        {
+            Debug.LogWarning("DoorInteraction: No required item name specified. Door is LOCKED.");
+            return false;
+        }
+
+        PlayerController player = PlayerPersist.GetPlayerController();
+
+        if (player == null)
+        {
+            player = Object.FindFirstObjectByType<PlayerController>();
+        }
+
+        if (player == null)
+        {
+            Debug.LogError("DoorInteraction: Cannot find PlayerController!");
+            return false;
+        }
+
+        // ✅ Use string-based inventory check
+        bool hasItem = player.HasItem(requiredItemName, 1);
+
+        Debug.Log($"DoorInteraction: Checking for '{requiredItemName}' → {hasItem}");
+
+        return hasItem;
     }
 
     IEnumerator StartDialogueNextFrame(string[] dialogueLines)
     {
-        yield return null; // wait 1 frame to avoid skipping first line
+        yield return null;
 
         dialogueManager.lines = dialogueLines;
         dialogueManager.StartDialogue();

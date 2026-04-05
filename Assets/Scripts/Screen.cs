@@ -30,8 +30,8 @@ public class Screen : MonoBehaviour
     }
 
     // Tên scene (set trong Inspector)
-    public string gameSceneName = "Game";
-    public string menuSceneName = "MainMenu";
+    public string gameSceneName = "Outside";
+    public string menuSceneName = "Outside";
     public GameObject dialogueManager;
 
     [Header("Start Screen")]
@@ -151,14 +151,27 @@ public class Screen : MonoBehaviour
     // Retry - chơi lại
     public void RetryGame()
     {
-        SceneManager.LoadScene(gameSceneName);
+        if (!string.IsNullOrWhiteSpace(gameSceneName) && Application.CanStreamedLevelBeLoaded(gameSceneName))
+        {
+            SceneManager.LoadScene(gameSceneName);
+            return;
+        }
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     // Về menu chính
     public void BackToMenu()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(menuSceneName);
+
+        if (!string.IsNullOrWhiteSpace(menuSceneName) && Application.CanStreamedLevelBeLoaded(menuSceneName))
+        {
+            SceneManager.LoadScene(menuSceneName);
+            return;
+        }
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     // Thoát game

@@ -38,23 +38,16 @@ public class SceneTransition : MonoBehaviour
             return;
         }
 
-        // Keep editor convenience only. Runtime door routing should rely on destinationSpawnId.
         spawnPosition = destinationSpawnPoint.transform.position;
+
         if (!string.IsNullOrEmpty(destinationSpawnPoint.spawnId))
         {
             destinationSpawnId = destinationSpawnPoint.spawnId;
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (!other.CompareTag("Player"))
-        {
-            return;
-        }
-
-        TriggerTransition(other.GetComponent<PlayerController>());
-    }
+    // ❌ REMOVE automatic trigger
+    // private void OnTriggerEnter2D(Collider2D other) { }
 
     public void TriggerTransition()
     {

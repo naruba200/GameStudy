@@ -1,8 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class SafeDialController : MonoBehaviour
 {
+    [Header("Safe Identification")]
+    [SerializeField] private string safeId = "safe_main"; // Must match the SafeTransition safeId
+    
+    [Header("Return to Scene")]
+    [SerializeField] private string returnSceneName = "SafeRoom"; // Scene to return to after opening
+    [SerializeField] private float returnDelay = 2f; // Wait time before returning
+    
     [Header("Dial Settings")]
     public Transform dial; // assign safe_dial_0
     public float rotationStep = 36f;
@@ -26,6 +34,14 @@ public class SafeDialController : MonoBehaviour
 
     private void Update()
     {
+        // Allow returning to previous scene with E key
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            Debug.Log("E pressed - returning to SafeRoom");
+            ReturnToSafeRoom();
+            return;
+        }
+
         HandleRotation();
         HandleInput();
     }
@@ -90,5 +106,26 @@ public class SafeDialController : MonoBehaviour
         safe_ring_0.SetActive(false);
         safe_dial_0.SetActive(false);
         safe_unlocked_0.SetActive(true);
+        
+        // Save the unlock state persistent
+        PlayerPrefs.SetInt("SafeUnlocked_" + safeId, 1);
+        PlayerPrefs.Save();
+        
+        Debug.Log("Safe " + safeId + " unlocked and state saved!");
+        
+        // Return to SafeRoom after delay
+        StartCoroutine(ReturnToSafeRoomDelayed());
+    }
+    
+    private void ReturnToSafeRoom()
+    {
+        // Load SafeRoom - SafeTransition.OnEnable will re-enable the player
+        SceneManager.LoadScene(returnSceneName);
+    }
+    
+    System.Collections.IEnumerator ReturnToSafeRoomDelayed()
+    {
+        yield return new WaitForSeconds(returnDelay);
+        ReturnToSafeRoom();
     }
 }
