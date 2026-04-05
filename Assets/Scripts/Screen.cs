@@ -60,7 +60,6 @@ public class Screen : MonoBehaviour
             }
 
             ApplyInventoryVisibilityForCurrentScreen();
-
             return;
         }
 
@@ -76,11 +75,6 @@ public class Screen : MonoBehaviour
             }
 
             Time.timeScale = 1f;
-        }
-
-        if (pauseGameWhenStartScreenVisible && startScreen != null && startScreen.activeSelf)
-        {
-            Time.timeScale = 0f;
         }
 
         ApplyInventoryVisibilityForCurrentScreen();

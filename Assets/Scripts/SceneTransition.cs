@@ -48,14 +48,28 @@ public class SceneTransition : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (isTransitioning || !other.CompareTag("Player"))
+        if (!other.CompareTag("Player"))
+        {
+            return;
+        }
+
+        TriggerTransition(other.GetComponent<PlayerController>());
+    }
+
+    public void TriggerTransition()
+    {
+        TriggerTransition(FindFirstObjectByType<PlayerController>());
+    }
+
+    private void TriggerTransition(PlayerController player)
+    {
+        if (isTransitioning)
         {
             return;
         }
 
         isTransitioning = true;
 
-        PlayerController player = other.GetComponent<PlayerController>();
         if (player != null)
         {
             player.StopMovement();

@@ -16,7 +16,6 @@ public class CameraFoloow : MonoBehaviour
     public Vector2 maxBounds;
 
     private Camera cam;
-
     private void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -57,7 +56,6 @@ public class CameraFoloow : MonoBehaviour
             target = persistentPlayer.transform;
             return;
         }
-
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {

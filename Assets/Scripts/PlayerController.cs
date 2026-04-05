@@ -21,8 +21,7 @@ public class PlayerController : MonoBehaviour
 
     public event Action OnInventoryChanged;
 
-    public  LayerMask solidObjectsLayer;
-
+    public LayerMask solidObjectsLayer;
     public LayerMask interactableLayer;
 
     private void Awake() 
@@ -63,16 +62,10 @@ public class PlayerController : MonoBehaviour
         {
             TryPickupItem();
         }
-
         if (!isMoving)
         {
             input.x = Input.GetAxisRaw("Horizontal");
             input.y = Input.GetAxisRaw("Vertical");
-
-            if (input.x != 0)
-            {
-                input.y = 0;
-            }
 
             if (input != Vector2.zero)
             {
@@ -104,11 +97,12 @@ public class PlayerController : MonoBehaviour
 
         isMoving = false;
     }
+
     private bool IsWalkable(Vector3 targetPos)
     {
         if (Physics2D.OverlapCircle(targetPos, 0.2f, solidObjectsLayer | interactableLayer) != null)
         {
-           return false;
+            return false;
         }
         return true;
     }
@@ -248,5 +242,4 @@ public class PlayerController : MonoBehaviour
 
         inventoryText.text = builder.ToString();
     }
-
 }

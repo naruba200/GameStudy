@@ -37,8 +37,20 @@ public class PlayerSpawnLoader : MonoBehaviour
 
         if (player != null)
         {
-            bool usedSpawnPoint = false;
+            bool hasPendingSpawn = PlayerPrefs.GetInt("HasPendingSpawn", 0) == 1;
             string spawnPointId = PlayerPrefs.GetString("SpawnPointId", string.Empty);
+            if (!hasPendingSpawn && string.IsNullOrEmpty(spawnPointId))
+            {
+                PlayerController playerController = player.GetComponent<PlayerController>();
+                if (playerController != null)
+                {
+                    playerController.ResumeMovement();
+                }
+
+                return;
+            }
+
+            bool usedSpawnPoint = false;
 
             if (!string.IsNullOrEmpty(spawnPointId))
             {
@@ -68,6 +80,8 @@ public class PlayerSpawnLoader : MonoBehaviour
             {
                 pc.ResumeMovement();
             }
+
+            PlayerPrefs.SetInt("HasPendingSpawn", 0);
         }
     }
 }
