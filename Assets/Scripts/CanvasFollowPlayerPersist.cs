@@ -11,6 +11,9 @@ public class CanvasFollowPlayerPersist : MonoBehaviour
     [SerializeField] private bool followPlayerPosition;
     [SerializeField] private Vector3 worldOffset = new Vector3(0f, 2f, 0f);
 
+    [Header("Debug")]
+    [SerializeField] private bool keepInSceneHierarchyDuringPlay;
+
     private static CanvasFollowPlayerPersist instance;
     private GameObject persistentRoot;
     private Transform playerTransform;
@@ -38,7 +41,11 @@ public class CanvasFollowPlayerPersist : MonoBehaviour
         }
 
         instance = this;
-        DontDestroyOnLoad(persistentRoot);
+
+        if (!(Application.isEditor && keepInSceneHierarchyDuringPlay))
+        {
+            DontDestroyOnLoad(persistentRoot);
+        }
     }
 
     private void OnEnable()

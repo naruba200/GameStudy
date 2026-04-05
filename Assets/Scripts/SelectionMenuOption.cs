@@ -16,6 +16,7 @@ public class SelectionMenuOption : MonoBehaviour, IPointerClickHandler, IPointer
 
     [SerializeField] private SelectionAction action;
     [SerializeField] private GameObject selectionRoot;
+    [SerializeField] private GameObject generalPanel;
     [SerializeField] private GameObject inventoryPanel;
     [SerializeField] private GameObject savePanel;
     [SerializeField] private string menuSceneName = "MainMenu";
@@ -54,12 +55,26 @@ public class SelectionMenuOption : MonoBehaviour, IPointerClickHandler, IPointer
 
     public void Execute()
     {
+        InventoryToggleUI inventoryToggle = Object.FindFirstObjectByType<InventoryToggleUI>();
+
         switch (action)
         {
             case SelectionAction.OpenInventory:
+                if (inventoryToggle != null)
+                {
+                    inventoryToggle.ShowInventoryUI();
+                    return;
+                }
+
                 ShowPanel(inventoryPanel, savePanel);
                 break;
             case SelectionAction.OpenSave:
+                if (inventoryToggle != null)
+                {
+                    inventoryToggle.ShowSaveUI();
+                    return;
+                }
+
                 ShowPanel(savePanel, inventoryPanel);
                 break;
             case SelectionAction.BackToMenu:
@@ -100,6 +115,16 @@ public class SelectionMenuOption : MonoBehaviour, IPointerClickHandler, IPointer
 
     private void ShowPanel(GameObject panelToShow, GameObject panelToHide)
     {
+        if (generalPanel == null)
+        {
+            generalPanel = GameObject.Find("GeneralUI");
+        }
+
+        if (generalPanel != null)
+        {
+            generalPanel.SetActive(false);
+        }
+
         if (inventoryPanel != null)
         {
             inventoryPanel.SetActive(panelToShow == inventoryPanel);

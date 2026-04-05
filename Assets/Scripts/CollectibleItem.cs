@@ -51,6 +51,13 @@ public class CollectibleItem : MonoBehaviour
         }
 
         player.AddItem(itemName, amount, stackable, icon);
+
+        DialogueManager dialogueManager = Object.FindFirstObjectByType<DialogueManager>();
+        if (dialogueManager != null)
+        {
+            dialogueManager.ShowAcquireMessage(itemName);
+        }
+
         Destroy(gameObject);
     }
 }
