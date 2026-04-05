@@ -78,7 +78,7 @@
     <Compile Include="Assets\Scripts\SelectionMenuController.cs" />
     <Compile Include="Assets\Scripts\SpawnManager.cs" />
     <Compile Include="Assets\Scripts\EnemyDialogueTrigger.cs" />
-    <Compile Include="Assets\Scripts\DialogMan.cs" />
+    <Compile Include="Assets\Scripts\Screen.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
