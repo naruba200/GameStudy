@@ -684,7 +684,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 229517792}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7eba76a6f5f32a64e9846fbac66402e0, type: 3}
+  m_Script: {fileID: 11500000, guid: 4a464ef8072a381409bf6d42ef012770, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DialogueManager
   dialoguePanel: {fileID: 1461151650}
