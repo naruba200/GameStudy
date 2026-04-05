@@ -16,19 +16,19 @@ public class CameraFoloow : MonoBehaviour
     public Vector2 maxBounds;
 
     private Camera cam;
-
-    void OnEnable()
+    private void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        target = null;
         TryResolveTarget();
     }
 
@@ -50,6 +50,12 @@ public class CameraFoloow : MonoBehaviour
             return;
         }
 
+        PlayerController persistentPlayer = PlayerPersist.GetPlayerController();
+        if (persistentPlayer != null)
+        {
+            target = persistentPlayer.transform;
+            return;
+        }
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {

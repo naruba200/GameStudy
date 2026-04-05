@@ -76,6 +76,7 @@ public class SelectionMenuOption : MonoBehaviour, IPointerClickHandler, IPointer
                 }
 
                 ShowPanel(savePanel, inventoryPanel);
+                SaveGameService.SaveCurrentGame();
                 break;
             case SelectionAction.BackToMenu:
                 Time.timeScale = 1f;
@@ -148,7 +149,7 @@ public class SelectionMenuOption : MonoBehaviour, IPointerClickHandler, IPointer
 
     private bool TryOpenStartScreen()
     {
-        Screen.ResetStartSessionFlag();
+        Screen.PrepareForStartMenuReturn();
 
         InventoryToggleUI inventoryToggle = Object.FindFirstObjectByType<InventoryToggleUI>();
         if (inventoryToggle != null)

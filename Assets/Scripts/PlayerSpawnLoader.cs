@@ -1,27 +1,56 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerSpawnLoader : MonoBehaviour
 {
-    void Start()
+    private void OnEnable()
     {
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void Start()
+    {
+        ApplySpawn();
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        StartCoroutine(ApplySpawnNextFrame());
+    }
+
+    private IEnumerator ApplySpawnNextFrame()
+    {
+        yield return null;
+        ApplySpawn();
+    }
+
+    private void ApplySpawn()
+    {
+        PlayerController playerController = PlayerPersist.GetPlayerController();
+        GameObject player = playerController != null ? playerController.gameObject : GameObject.FindGameObjectWithTag("Player");
 
         if (player != null)
         {
             bool hasPendingSpawn = PlayerPrefs.GetInt("HasPendingSpawn", 0) == 1;
-            if (!hasPendingSpawn)
+            string spawnPointId = PlayerPrefs.GetString("SpawnPointId", string.Empty);
+            if (!hasPendingSpawn && string.IsNullOrEmpty(spawnPointId))
             {
-                PlayerController playerController = player.GetComponent<PlayerController>();
-                if (playerController != null)
+                PlayerController scenePlayerController = player.GetComponent<PlayerController>();
+                if (scenePlayerController != null)
                 {
-                    playerController.ResumeMovement();
+                    scenePlayerController.ResumeMovement();
                 }
 
                 return;
             }
 
             bool usedSpawnPoint = false;
-            string spawnPointId = PlayerPrefs.GetString("SpawnPointId", string.Empty);
 
             if (!string.IsNullOrEmpty(spawnPointId))
             {

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class InventoryGridUI : MonoBehaviour
@@ -15,20 +16,49 @@ public class InventoryGridUI : MonoBehaviour
 
     private void OnEnable()
     {
-        if (player != null)
-        {
-            player.OnInventoryChanged += Refresh;
-        }
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        RebindPlayer();
+        ApplyGridSettings();
+        Refresh();
+    }
 
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        RebindPlayer();
         ApplyGridSettings();
         Refresh();
     }
 
     private void OnDisable()
     {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+
         if (player != null)
         {
             player.OnInventoryChanged -= Refresh;
+        }
+    }
+
+    private void RebindPlayer()
+    {
+        if (player != null)
+        {
+            player.OnInventoryChanged -= Refresh;
+        }
+
+        PlayerController persistentPlayer = PlayerPersist.GetPlayerController();
+        if (persistentPlayer != null)
+        {
+            player = persistentPlayer;
+        }
+        else if (player == null)
+        {
+            player = Object.FindFirstObjectByType<PlayerController>();
+        }
+
+        if (player != null)
+        {
+            player.OnInventoryChanged += Refresh;
         }
     }
 

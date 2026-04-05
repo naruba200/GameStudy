@@ -48,32 +48,43 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.3.3f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\SaveGameService.cs" />
     <Compile Include="Assets\Scripts\CollectibleItem.cs" />
     <Compile Include="Assets\Scripts\PlayerPersist.cs" />
     <Compile Include="Assets\Scripts\EnemyAI.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\InventoryGridUI.cs" />
     <Compile Include="Assets\Scripts\SpawnPoint.cs" />
+    <Compile Include="Assets\Scripts\SessionPlaytime.cs" />
     <Compile Include="Assets\Scripts\SceneLoadingOverlay.cs" />
     <Compile Include="Assets\Scripts\PlayerSpawnLoader.cs" />
     <Compile Include="Assets\Scripts\SelectionMenuOption.cs" />
+    <Compile Include="Assets\Scripts\DialogManager.cs" />
     <Compile Include="Assets\Scripts\PlaytimeTracker.cs" />
+    <Compile Include="Assets\Scripts\SignDIalogue.cs" />
     <Compile Include="Assets\Scripts\CanvasFollowPlayerPersist.cs" />
     <Compile Include="Assets\Scripts\InventorySlotUI.cs" />
     <Compile Include="Assets\Scripts\FadeController.cs" />
+    <Compile Include="Assets\Scripts\DoorInteraction.cs" />
+    <Compile Include="Assets\Scripts\DoorLockedDialogue.cs" />
     <Compile Include="Assets\Scripts\InventoryItemEntry.cs" />
     <Compile Include="Assets\Scripts\InventoryToggleUI.cs" />
+    <Compile Include="Assets\Scripts\PlayerInventory.cs" />
     <Compile Include="Assets\Scripts\CameraFoloow.cs" />
     <Compile Include="Assets\Scripts\SceneTransition.cs" />
+    <Compile Include="Assets\Scripts\SafeDialController.cs" />
+    <Compile Include="Assets\Scripts\KeyPickup.cs" />
+    <Compile Include="Assets\Scripts\GameWorldState.cs" />
     <Compile Include="Assets\Scripts\SelectionMenuController.cs" />
     <Compile Include="Assets\Scripts\SpawnManager.cs" />
+    <Compile Include="Assets\Scripts\EnemyDialogueTrigger.cs" />
     <Compile Include="Assets\Scripts\Screen.cs" />
-    <Compile Include="Assets\Scripts\DialogMan.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile-2-Pass.shader" />
+    <None Include="Assets\Pixel Art Key Pack - Animated\Key Pack - Read Me.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />

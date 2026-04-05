@@ -3747,7 +3747,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SceneTransition
   sceneToLoad: Outside
   spawnPosition: {x: -198.06, y: -8.06}
-  destinationSpawnId: outside_door_entry
+  destinationSpawnId: outside_entry_point
   destinationSpawnPoint: {fileID: 0}
   fadeController: {fileID: 478078594}
   localFadeAnimator: {fileID: 4100096553406750131}
