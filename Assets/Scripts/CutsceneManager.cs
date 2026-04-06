@@ -53,9 +53,7 @@ public class CutsceneManager : MonoBehaviour
         monster.transform.position += Vector3.right * monsterMoveSpeed * Time.deltaTime;
         player.transform.position += Vector3.right * playerRunSpeed * Time.deltaTime;
   
-        player.animator.SetBool("isMoving", true);
-        player.animator.SetFloat("moveX", 1f);
-        player.animator.SetFloat("moveY", 0f);
+        player.SetMovementAnimation(Vector2.right, true);
 
         yield return null;
     }

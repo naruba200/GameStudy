@@ -49,6 +49,18 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("isMoving", false);
     }
 
+    public void SetMovementAnimation(Vector2 direction, bool moving)
+    {
+        if (animator == null)
+        {
+            return;
+        }
+
+        animator.SetBool("isMoving", moving);
+        animator.SetFloat("moveX", direction.x);
+        animator.SetFloat("moveY", direction.y);
+    }
+
     private void Update()
     {
         if (!canMove)
