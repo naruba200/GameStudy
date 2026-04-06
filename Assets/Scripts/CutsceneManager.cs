@@ -15,6 +15,7 @@ public class CutsceneManager : MonoBehaviour
     public float playerRunSpeed = 3f;    // tốc độ player chạy phải
     public float cutsceneDuration = 3f;  // bao lâu trước khi fade
     public float fadeDuration = 1f;
+    private bool isPlaying;
 
           // CanvasGroup trên panel đen
 
@@ -22,48 +23,87 @@ public class CutsceneManager : MonoBehaviour
 
     public void PlayDoorCutscene()
     {
-        
+        if (isPlaying)
+        {
+            return;
+        }
+
         StartCoroutine(DoorCutsceneRoutine());
     }
 
-    IEnumerator DoorCutsceneRoutine()
-{
-    player.StopMovement();
-
-    monster.transform.position = monsterSpawnPoint.position;
-    monster.SetActive(true);
-    yield return null;
-
-
-    // Đảm bảo tắt AI trước khi SetActive
-    EnemyAI ai = monster.GetComponent<EnemyAI>();
-    if (ai != null) ai.enabled = false;
-
-    monster.transform.position = monsterSpawnPoint.position;
-    monster.SetActive(true);
-
-    // Chờ 1 frame để monster khởi tạo xong
-    yield return null;
-
-    float elapsed = 0f;
-    while (elapsed < cutsceneDuration)
+    private bool TryResolvePlayer(out PlayerController resolvedPlayer)
     {
-        elapsed += Time.deltaTime;
+        resolvedPlayer = player;
 
-        monster.transform.position += Vector3.right * monsterMoveSpeed * Time.deltaTime;
-        player.transform.position += Vector3.right * playerRunSpeed * Time.deltaTime;
-  
-        player.SetMovementAnimation(Vector2.right, true);
+        if (resolvedPlayer == null)
+        {
+            resolvedPlayer = PlayerPersist.GetPlayerController();
+        }
 
-        yield return null;
+        if (resolvedPlayer == null)
+        {
+            resolvedPlayer = FindFirstObjectByType<PlayerController>();
+        }
+
+        player = resolvedPlayer;
+        return resolvedPlayer != null;
     }
 
+    IEnumerator DoorCutsceneRoutine()
+    {
+        isPlaying = true;
+
+        if (!TryResolvePlayer(out PlayerController resolvedPlayer) || monster == null || monsterSpawnPoint == null)
+        {
+            isPlaying = false;
+            yield break;
+        }
+
+        resolvedPlayer.StopMovement();
+
+        monster.transform.position = monsterSpawnPoint.position;
+        monster.SetActive(true);
+        yield return null;
 
 
-    if (ai != null) ai.enabled = true;
-    player.ResumeMovement();
+        // Đảm bảo tắt AI trước khi SetActive
+        EnemyAI ai = monster.GetComponent<EnemyAI>();
+        if (ai != null) ai.enabled = false;
 
-}
+        monster.transform.position = monsterSpawnPoint.position;
+        monster.SetActive(true);
+
+        // Chờ 1 frame để monster khởi tạo xong
+        yield return null;
+
+        float elapsed = 0f;
+        while (elapsed < cutsceneDuration)
+        {
+            elapsed += Time.deltaTime;
+
+            if (resolvedPlayer == null || monster == null)
+            {
+                break;
+            }
+
+            monster.transform.position += Vector3.right * monsterMoveSpeed * Time.deltaTime;
+            resolvedPlayer.transform.position += Vector3.right * playerRunSpeed * Time.deltaTime;
+
+            resolvedPlayer.SetMovementAnimation(Vector2.right, true);
+
+            yield return null;
+        }
+
+
+
+        if (ai != null) ai.enabled = true;
+        if (resolvedPlayer != null)
+        {
+            resolvedPlayer.ResumeMovement();
+        }
+
+        isPlaying = false;
+    }
 
 
 }

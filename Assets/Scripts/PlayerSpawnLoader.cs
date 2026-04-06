@@ -38,8 +38,7 @@ public class PlayerSpawnLoader : MonoBehaviour
         if (player != null)
         {
             bool hasPendingSpawn = PlayerPrefs.GetInt("HasPendingSpawn", 0) == 1;
-            string spawnPointId = PlayerPrefs.GetString("SpawnPointId", string.Empty);
-            if (!hasPendingSpawn && string.IsNullOrEmpty(spawnPointId))
+            if (!hasPendingSpawn)
             {
                 PlayerController scenePlayerController = player.GetComponent<PlayerController>();
                 if (scenePlayerController != null)
@@ -49,6 +48,8 @@ public class PlayerSpawnLoader : MonoBehaviour
 
                 return;
             }
+
+            string spawnPointId = PlayerPrefs.GetString("SpawnPointId", string.Empty);
 
             bool usedSpawnPoint = false;
 
@@ -82,6 +83,9 @@ public class PlayerSpawnLoader : MonoBehaviour
             }
 
             PlayerPrefs.SetInt("HasPendingSpawn", 0);
+            PlayerPrefs.DeleteKey("SpawnPointId");
+            PlayerPrefs.DeleteKey("SpawnX");
+            PlayerPrefs.DeleteKey("SpawnY");
         }
     }
 }

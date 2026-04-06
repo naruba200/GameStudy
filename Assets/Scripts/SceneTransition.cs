@@ -19,6 +19,8 @@ public class SceneTransition : MonoBehaviour
     [Header("Trigger Behavior")]
     public bool autoTransitionOnPlayerEnter = true;
     public bool blockAutoTransitionWhenDoorScriptsPresent = true;
+    public bool ignoreSpawnForThisTransition = false;
+    public bool resetPersistentObjectsForThisTransition = false;
 
     private bool isTransitioning;
 
@@ -122,10 +124,28 @@ public class SceneTransition : MonoBehaviour
             yield return new WaitForSecondsRealtime(localFadeDuration);
         }
 
-        PlayerPrefs.SetString("SpawnPointId", destinationSpawnId ?? string.Empty);
-        PlayerPrefs.SetFloat("SpawnX", spawnPosition.x);
-        PlayerPrefs.SetFloat("SpawnY", spawnPosition.y);
-        PlayerPrefs.SetInt("HasPendingSpawn", 1);
+        if (ignoreSpawnForThisTransition)
+        {
+            PlayerPrefs.SetInt("HasPendingSpawn", 0);
+            PlayerPrefs.DeleteKey("SpawnPointId");
+            PlayerPrefs.DeleteKey("SpawnX");
+            PlayerPrefs.DeleteKey("SpawnY");
+        }
+        else
+        {
+            PlayerPrefs.SetString("SpawnPointId", destinationSpawnId ?? string.Empty);
+            PlayerPrefs.SetFloat("SpawnX", spawnPosition.x);
+            PlayerPrefs.SetFloat("SpawnY", spawnPosition.y);
+            PlayerPrefs.SetInt("HasPendingSpawn", 1);
+        }
+
+        if (resetPersistentObjectsForThisTransition)
+        {
+            InventoryToggleUI.ResetPersistentInstance();
+            CanvasFollowPlayerPersist.ResetPersistentInstance();
+            PlayerPersist.ResetPersistentInstance();
+            EnemyAI.ResetPersistentInstance();
+        }
 
         SceneManager.LoadScene(sceneToLoad);
     }
