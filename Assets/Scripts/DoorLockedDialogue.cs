@@ -11,6 +11,16 @@ public class DoorLockedDialogue : MonoBehaviour
 
     private void Update()
     {
+        if (dialogueManager == null)
+        {
+            dialogueManager = DialogueManager.Resolve();
+        }
+
+        if (dialogueManager == null)
+        {
+            return;
+        }
+
         // ✅ FIX: Don't allow interaction while dialogue is active
         if (dialogueManager.isDialogueActive) return;
 

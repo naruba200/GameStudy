@@ -16,6 +16,10 @@ public class SceneTransition : MonoBehaviour
     public string localFadeOutState = "End";
     public float localFadeDuration = 1f;
 
+    [Header("Trigger Behavior")]
+    public bool autoTransitionOnPlayerEnter = true;
+    public bool blockAutoTransitionWhenDoorScriptsPresent = true;
+
     private bool isTransitioning;
 
     private void Awake()
@@ -48,6 +52,26 @@ public class SceneTransition : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (!autoTransitionOnPlayerEnter)
+        {
+            return;
+        }
+
+        if (blockAutoTransitionWhenDoorScriptsPresent)
+        {
+            DoorItemLock itemLock = GetComponent<DoorItemLock>();
+            if (itemLock != null && itemLock.enabled)
+            {
+                return;
+            }
+
+            DoorInteraction doorInteraction = GetComponent<DoorInteraction>();
+            if (doorInteraction != null && doorInteraction.enabled)
+            {
+                return;
+            }
+        }
+
         if (!other.CompareTag("Player"))
         {
             return;

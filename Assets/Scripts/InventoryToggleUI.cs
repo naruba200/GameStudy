@@ -191,8 +191,7 @@ public class InventoryToggleUI : MonoBehaviour
 
         if (!enabled)
         {
-            CloseInventoryInternal(false, false);
-            HideAllShowMainInventoryObjects();
+            ForceCloseAllInventoryUI();
 
             if (player != null)
             {
@@ -208,6 +207,28 @@ public class InventoryToggleUI : MonoBehaviour
         {
             player.ResumeMovement();
         }
+    }
+
+    public void ForceCloseAllInventoryUI()
+    {
+        CloseInventoryInternal(false, false);
+
+        if (generalUIPanel != null)
+        {
+            generalUIPanel.SetActive(false);
+        }
+
+        if (inventoryUIPanel != null)
+        {
+            inventoryUIPanel.SetActive(false);
+        }
+
+        if (saveUIPanel != null)
+        {
+            saveUIPanel.SetActive(false);
+        }
+
+        HideAllShowMainInventoryObjects();
     }
 
     public void ToggleInventory()

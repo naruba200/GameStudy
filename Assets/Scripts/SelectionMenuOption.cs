@@ -80,13 +80,16 @@ public class SelectionMenuOption : MonoBehaviour, IPointerClickHandler, IPointer
                 break;
             case SelectionAction.BackToMenu:
                 Time.timeScale = 1f;
-                if (!string.IsNullOrWhiteSpace(menuSceneName) && Application.CanStreamedLevelBeLoaded(menuSceneName))
+                Screen screen = ResolveScreenInLoadedScenes();
+                if (screen != null)
                 {
-                    SceneManager.LoadScene(menuSceneName);
+                    screen.BackToMenu();
+                    return;
                 }
-                else
+
+                if (!Screen.ReturnToStartMenu(menuSceneName, fallbackStartSceneName))
                 {
-                    TryOpenStartScreen();
+                    Debug.LogWarning("Unable to return to start menu: no in-scene start screen and no valid fallback scene.");
                 }
                 break;
         }
@@ -145,62 +148,6 @@ public class SelectionMenuOption : MonoBehaviour, IPointerClickHandler, IPointer
         {
             panelToShow.SetActive(true);
         }
-    }
-
-    private bool TryOpenStartScreen()
-    {
-        Screen.PrepareForStartMenuReturn();
-
-        InventoryToggleUI inventoryToggle = Object.FindFirstObjectByType<InventoryToggleUI>();
-        if (inventoryToggle != null)
-        {
-            inventoryToggle.SetInventoryAccess(false);
-        }
-
-        GameObject inventoryRoot = GameObject.Find("Inventory");
-        if (inventoryRoot != null)
-        {
-            inventoryRoot.SetActive(false);
-        }
-
-        GameObject showMainInventory = GameObject.Find("ShowMainInventory");
-        if (showMainInventory != null)
-        {
-            showMainInventory.SetActive(false);
-        }
-
-        if (inventoryPanel != null)
-        {
-            inventoryPanel.SetActive(false);
-        }
-
-        if (savePanel != null)
-        {
-            savePanel.SetActive(false);
-        }
-
-        if (selectionRoot != null)
-        {
-            selectionRoot.SetActive(true);
-        }
-
-        Screen screen = ResolveScreenInLoadedScenes();
-        if (screen != null && screen.startScreen != null)
-        {
-            screen.startScreen.SetActive(true);
-            Time.timeScale = screen.pauseGameWhenStartScreenVisible ? 0f : 1f;
-            return true;
-        }
-
-        if (!string.IsNullOrWhiteSpace(fallbackStartSceneName) && Application.CanStreamedLevelBeLoaded(fallbackStartSceneName))
-        {
-            Time.timeScale = 1f;
-            SceneManager.LoadScene(fallbackStartSceneName);
-            return true;
-        }
-
-        Debug.LogWarning("Unable to open start menu: no start screen found and fallback scene is not loadable.");
-        return false;
     }
 
     private Screen ResolveScreenInLoadedScenes()

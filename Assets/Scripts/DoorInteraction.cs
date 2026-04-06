@@ -20,6 +20,11 @@ public class DoorInteraction : MonoBehaviour
 
     void Update()
     {
+        if (dialogueManager == null)
+        {
+            dialogueManager = DialogueManager.Resolve();
+        }
+
         if (!playerInRange) return;
 
         bool isDialogueActive = dialogueManager != null && dialogueManager.isDialogueActive;
@@ -78,6 +83,16 @@ public class DoorInteraction : MonoBehaviour
     IEnumerator StartDialogueNextFrame(string[] dialogueLines)
     {
         yield return null; // wait 1 frame to avoid skipping first line
+
+        if (dialogueManager == null)
+        {
+            dialogueManager = DialogueManager.Resolve();
+        }
+
+        if (dialogueManager == null)
+        {
+            yield break;
+        }
 
         dialogueManager.lines = dialogueLines;
         dialogueManager.StartDialogue();

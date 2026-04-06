@@ -15,6 +15,17 @@ public class SceneLoadingOverlay : MonoBehaviour
 
     public static bool IsLoading => instance != null && instance.isLoading;
 
+    public static void ForceHide()
+    {
+        if (instance == null)
+        {
+            return;
+        }
+
+        instance.StopAllCoroutines();
+        instance.HideOverlay();
+    }
+
     public static void LoadScene(string sceneName, Font loadingFontOverride = null)
     {
         if (string.IsNullOrWhiteSpace(sceneName))

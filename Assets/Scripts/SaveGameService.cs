@@ -136,6 +136,9 @@ public static class SaveGameService
             return;
         }
 
+        DialogueManager.ResetGlobalDialogueState();
+        RebindDialogueManagersInScene();
+
         PlayerController player = PlayerPersist.GetPlayerController();
         if (player == null)
         {
@@ -156,6 +159,60 @@ public static class SaveGameService
         pendingLoadData = null;
         isAwaitingSceneLoad = false;
         SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private static void RebindDialogueManagersInScene()
+    {
+        DialogueManager dialogueManager = DialogueManager.Resolve();
+        if (dialogueManager == null)
+        {
+            return;
+        }
+
+        DoorItemLock[] doorLocks = UnityEngine.Object.FindObjectsByType<DoorItemLock>(FindObjectsSortMode.None);
+        for (int i = 0; i < doorLocks.Length; i++)
+        {
+            if (doorLocks[i] != null)
+            {
+                doorLocks[i].dialogueManager = dialogueManager;
+            }
+        }
+
+        DoorInteraction[] doorInteractions = UnityEngine.Object.FindObjectsByType<DoorInteraction>(FindObjectsSortMode.None);
+        for (int i = 0; i < doorInteractions.Length; i++)
+        {
+            if (doorInteractions[i] != null)
+            {
+                doorInteractions[i].dialogueManager = dialogueManager;
+            }
+        }
+
+        DoorLockedDialogue[] lockedDialogues = UnityEngine.Object.FindObjectsByType<DoorLockedDialogue>(FindObjectsSortMode.None);
+        for (int i = 0; i < lockedDialogues.Length; i++)
+        {
+            if (lockedDialogues[i] != null)
+            {
+                lockedDialogues[i].dialogueManager = dialogueManager;
+            }
+        }
+
+        KeyPickup[] keyPickups = UnityEngine.Object.FindObjectsByType<KeyPickup>(FindObjectsSortMode.None);
+        for (int i = 0; i < keyPickups.Length; i++)
+        {
+            if (keyPickups[i] != null)
+            {
+                keyPickups[i].dialogueManager = dialogueManager;
+            }
+        }
+
+        SignDialogue[] signs = UnityEngine.Object.FindObjectsByType<SignDialogue>(FindObjectsSortMode.None);
+        for (int i = 0; i < signs.Length; i++)
+        {
+            if (signs[i] != null)
+            {
+                signs[i].dialogueManager = dialogueManager;
+            }
+        }
     }
 
     private static bool WriteToFile(SaveData data)

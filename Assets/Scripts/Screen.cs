@@ -1,10 +1,12 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Screen : MonoBehaviour
 {
     private static bool hasStartedThisSession;
     private static bool autoStartDialogueOnLoad;
+    private readonly System.Collections.Generic.HashSet<Button> reboundButtons = new System.Collections.Generic.HashSet<Button>();
 
     public static void ResetStartSessionFlag()
     {
@@ -24,9 +26,31 @@ public class Screen : MonoBehaviour
 
         SessionPlaytime.Reset();
         SaveGameService.ClearPendingLoadState();
+    }
+
+    public static bool ReturnToStartMenu(string preferredMenuSceneName, string fallbackSceneName)
+    {
+        PrepareForStartMenuReturn();
+        Time.timeScale = 1f;
+        SceneLoadingOverlay.ForceHide();
 
         InventoryToggleUI.ResetPersistentInstance();
         PlayerPersist.ResetPersistentInstance();
+        CanvasFollowPlayerPersist.ResetPersistentInstance();
+
+        if (!string.IsNullOrWhiteSpace(preferredMenuSceneName) && Application.CanStreamedLevelBeLoaded(preferredMenuSceneName))
+        {
+            SceneManager.LoadScene(preferredMenuSceneName);
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(fallbackSceneName) && Application.CanStreamedLevelBeLoaded(fallbackSceneName))
+        {
+            SceneManager.LoadScene(fallbackSceneName);
+            return true;
+        }
+
+        return false;
     }
 
     // Tên scene (set trong Inspector)
@@ -44,6 +68,9 @@ public class Screen : MonoBehaviour
 
     private void Start()
     {
+        EnsureStartScreenReference();
+        EnsureStartScreenButtonBindings();
+
         if (hasStartedThisSession)
         {
             if (startScreen != null)
@@ -63,19 +90,13 @@ public class Screen : MonoBehaviour
             return;
         }
 
-        if (pauseGameWhenStartScreenVisible && startScreen != null && startScreen.activeSelf)
+        if (startScreen != null)
         {
-            Time.timeScale = 0f;
+            startScreen.SetActive(true);
         }
-        else
-        {
-            if (startScreen != null)
-            {
-                startScreen.SetActive(true);
-            }
 
-            Time.timeScale = 1f;
-        }
+        bool shouldPause = pauseGameWhenStartScreenVisible && startScreen != null && startScreen.activeInHierarchy;
+        Time.timeScale = shouldPause ? 0f : 1f;
 
         ApplyInventoryVisibilityForCurrentScreen();
     }
@@ -113,6 +134,8 @@ public class Screen : MonoBehaviour
             StartGame();
             return;
         }
+
+        DialogueManager.ResetGlobalDialogueState();
 
         hasStartedThisSession = true;
         autoStartDialogueOnLoad = false;
@@ -157,13 +180,36 @@ public class Screen : MonoBehaviour
     // Về menu chính
     public void BackToMenu()
     {
+        EnsureStartScreenReference();
         Time.timeScale = 1f;
-        SceneManager.LoadScene(menuSceneName);
+
+        if (TryShowStartScreenInCurrentScene())
+        {
+            return;
+        }
+
+        string fallbackScene = ResolveStartSceneName();
+        if (ReturnToStartMenu(menuSceneName, fallbackScene))
+        {
+            return;
+        }
+
+        Debug.LogWarning("BackToMenu failed: no start screen in current scene and menu scene is not loadable.");
     }
 
     // Thoát game
     public void QuitGame()
     {
+        EnsureStartScreenReference();
+        bool isStartScreenVisible = startScreen != null && startScreen.activeInHierarchy;
+
+        // When called from in-game inventory, always return to start menu instead of closing app.
+        if (!isStartScreenVisible)
+        {
+            BackToMenu();
+            return;
+        }
+
         Debug.Log("Quit Game");
         Time.timeScale = 1f;
         Application.Quit();
@@ -230,5 +276,144 @@ public class Screen : MonoBehaviour
         {
             showMainInventory.SetActive(false);
         }
+    }
+
+    private bool TryShowStartScreenInCurrentScene()
+    {
+        EnsureStartScreenReference();
+
+        if (startScreen == null)
+        {
+            return false;
+        }
+
+        PrepareForStartMenuReturn();
+
+        InventoryToggleUI inventoryToggle = Object.FindFirstObjectByType<InventoryToggleUI>();
+        if (inventoryToggle != null)
+        {
+            inventoryToggle.ForceCloseAllInventoryUI();
+            inventoryToggle.SetInventoryAccess(false);
+        }
+
+        SceneLoadingOverlay.ForceHide();
+
+        EnsureStartScreenButtonBindings();
+
+        startScreen.SetActive(true);
+        Time.timeScale = pauseGameWhenStartScreenVisible ? 0f : 1f;
+
+        ApplyInventoryVisibilityForCurrentScreen();
+        return true;
+    }
+
+    private void EnsureStartScreenReference()
+    {
+        if (startScreen != null)
+        {
+            return;
+        }
+
+        startScreen = FindInLoadedScenesByName("StartingScreen");
+        if (startScreen == null)
+        {
+            startScreen = FindInLoadedScenesByName("StartScreen");
+        }
+    }
+
+    private void EnsureStartScreenButtonBindings()
+    {
+        if (startScreen == null)
+        {
+            return;
+        }
+
+        Button[] buttons = startScreen.GetComponentsInChildren<Button>(true);
+        for (int b = 0; b < buttons.Length; b++)
+        {
+            Button button = buttons[b];
+            if (button == null || reboundButtons.Contains(button))
+            {
+                continue;
+            }
+
+            int eventCount = button.onClick.GetPersistentEventCount();
+            for (int i = 0; i < eventCount; i++)
+            {
+                string methodName = button.onClick.GetPersistentMethodName(i);
+                if (string.IsNullOrWhiteSpace(methodName))
+                {
+                    continue;
+                }
+
+                Object target = button.onClick.GetPersistentTarget(i);
+                if (target != null)
+                {
+                    continue;
+                }
+
+                if (!TryAddRuntimeBinding(button, methodName))
+                {
+                    continue;
+                }
+
+                reboundButtons.Add(button);
+                break;
+            }
+        }
+    }
+
+    private bool TryAddRuntimeBinding(Button button, string methodName)
+    {
+        switch (methodName)
+        {
+            case nameof(StartGame):
+                button.onClick.AddListener(StartGame);
+                return true;
+            case nameof(ContinueGame):
+                button.onClick.AddListener(ContinueGame);
+                return true;
+            case nameof(BackToMenu):
+                button.onClick.AddListener(BackToMenu);
+                return true;
+            case nameof(QuitGame):
+                button.onClick.AddListener(QuitGame);
+                return true;
+            case nameof(RetryGame):
+                button.onClick.AddListener(RetryGame);
+                return true;
+            case nameof(SaveGameNow):
+                button.onClick.AddListener(SaveGameNow);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static GameObject FindInLoadedScenesByName(string objectName)
+    {
+        if (string.IsNullOrWhiteSpace(objectName))
+        {
+            return null;
+        }
+
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        for (int i = 0; i < allObjects.Length; i++)
+        {
+            GameObject candidate = allObjects[i];
+            if (candidate == null || candidate.name != objectName)
+            {
+                continue;
+            }
+
+            if (!candidate.scene.IsValid() || !candidate.scene.isLoaded)
+            {
+                continue;
+            }
+
+            return candidate;
+        }
+
+        return null;
     }
 }

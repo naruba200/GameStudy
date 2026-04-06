@@ -11,6 +11,12 @@ public class KeyPickup : MonoBehaviour
         {
             PlayerInventory.Instance.SetKey(true);
 
+            DialogueManager resolvedDialogueManager = DialogueManager.Resolve();
+            if (resolvedDialogueManager != null)
+            {
+                dialogueManager = resolvedDialogueManager;
+            }
+
             if (dialogueManager != null && pickupDialogue.Length > 0)
             {
                 dialogueManager.lines = pickupDialogue;

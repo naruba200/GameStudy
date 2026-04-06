@@ -11,11 +11,16 @@ public class SignDialogue : MonoBehaviour
 
     void Update()
     {
+        if (dialogueManager == null)
+        {
+            dialogueManager = DialogueManager.Resolve();
+        }
+
         // Prevent restarting dialogue while it's already running
         if (dialogueManager != null && dialogueManager.isDialogueActive)
             return;
 
-        if (playerInRange && Input.GetKeyDown(KeyCode.E))
+        if (dialogueManager != null && playerInRange && Input.GetKeyDown(KeyCode.E))
         {
             dialogueManager.lines = lines;
             dialogueManager.StartDialogue();
