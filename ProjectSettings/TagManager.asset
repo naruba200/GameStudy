@@ -11,12 +11,12 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - Player
   - SolidObjects
   - Interactables
-  - 
-  - 
-  - 
+  - Door
+  - Wall
+  - Enemy
   - 
   - 
   - 
@@ -49,6 +49,12 @@ TagManager:
     locked: 0
   - name: Player
     uniqueID: 2746953277
+    locked: 0
+  - name: Ground
+    uniqueID: 3109452673
+    locked: 0
+  - name: Wall
+    uniqueID: 236248073
     locked: 0
   m_RenderingLayers:
   - Default
