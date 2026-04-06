@@ -24,7 +24,7 @@ public class DoorLockedDialogue : MonoBehaviour
         // ✅ FIX: Don't allow interaction while dialogue is active
         if (dialogueManager.isDialogueActive) return;
 
-        if (playerInRange && Input.GetKeyDown(KeyCode.E))
+        if (playerInRange && Input.GetKeyDown(KeyCode.F))
         {
             if (!PlayerInventory.Instance.hasKey)
             {

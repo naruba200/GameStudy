@@ -55,10 +55,14 @@
     <Compile Include="Assets\Scripts\EnemyAI.cs" />
     <Compile Include="Assets\Scripts\PlayerHideState.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\AreaBasedMusicZone.cs" />
     <Compile Include="Assets\Scripts\InventoryGridUI.cs" />
     <Compile Include="Assets\Scripts\SpawnPoint.cs" />
     <Compile Include="Assets\Scripts\SessionPlaytime.cs" />
+    <Compile Include="Assets\Scripts\EnemyProximityAudio.cs" />
     <Compile Include="Assets\Scripts\SceneLoadingOverlay.cs" />
+    <Compile Include="Assets\Scripts\PickupEnemyActivator.cs" />
+    <Compile Include="Assets\Scripts\CollectibleAudio.cs" />
     <Compile Include="Assets\Scripts\PlayerSpawnLoader.cs" />
     <Compile Include="Assets\Scripts\SelectionMenuOption.cs" />
     <Compile Include="Assets\Scripts\DialogManager.cs" />
@@ -68,6 +72,7 @@
     <Compile Include="Assets\Scripts\InventorySlotUI.cs" />
     <Compile Include="Assets\Scripts\FadeController.cs" />
     <Compile Include="Assets\Scripts\DoorInteraction.cs" />
+    <Compile Include="Assets\Scripts\BackgroundAudioManager.cs" />
     <Compile Include="Assets\Scripts\DoorLockedDialogue.cs" />
     <Compile Include="Assets\Scripts\InventoryItemEntry.cs" />
     <Compile Include="Assets\Scripts\InventoryToggleUI.cs" />
@@ -77,6 +82,7 @@
     <Compile Include="Assets\Scripts\SafeDialController.cs" />
     <Compile Include="Assets\Scripts\KeyPickup.cs" />
     <Compile Include="Assets\Scripts\GameWorldState.cs" />
+    <Compile Include="Assets\Scripts\PlayerFootstepAudio.cs" />
     <Compile Include="Assets\Scripts\SelectionMenuController.cs" />
     <Compile Include="Assets\Scripts\SpawnManager.cs" />
     <Compile Include="Assets\Scripts\SafeTransition.cs" />

@@ -1,12 +1,48 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using TMPro;
 
 public class Screen : MonoBehaviour
 {
     private static bool hasStartedThisSession;
     private static bool autoStartDialogueOnLoad;
+    private static bool isGameOver;
+    private static Screen activeInstance;
+    private static string cachedGameSceneName = "Outside";
+    private static string cachedMenuSceneName = "MainMenu";
+    private static Font cachedLoadingFont;
+    private static readonly System.Collections.Generic.HashSet<Button> fallbackBoundButtons = new System.Collections.Generic.HashSet<Button>();
     private readonly System.Collections.Generic.HashSet<Button> reboundButtons = new System.Collections.Generic.HashSet<Button>();
+
+    public static bool IsGameOver => isGameOver;
+
+    private void Awake()
+    {
+        activeInstance = this;
+    }
+
+    private void OnEnable()
+    {
+        activeInstance = this;
+    }
+
+    private void OnDisable()
+    {
+        if (activeInstance == this)
+        {
+            activeInstance = null;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (activeInstance == this)
+        {
+            activeInstance = null;
+        }
+    }
 
     public static void ResetStartSessionFlag()
     {
@@ -17,6 +53,7 @@ public class Screen : MonoBehaviour
     {
         hasStartedThisSession = false;
         autoStartDialogueOnLoad = false;
+        isGameOver = false;
 
         PlayerPrefs.SetInt("HasPendingSpawn", 0);
         PlayerPrefs.DeleteKey("SpawnPointId");
@@ -28,6 +65,29 @@ public class Screen : MonoBehaviour
         SaveGameService.ClearPendingLoadState();
     }
 
+    public static bool TriggerGameOver()
+    {
+        if (isGameOver)
+        {
+            return false;
+        }
+
+        isGameOver = true;
+
+        activeInstance = ResolveActiveScreenInstance();
+
+        if (activeInstance != null)
+        {
+            activeInstance.ShowDeathScreen();
+        }
+        else
+        {
+            ShowDeathScreenWithoutScreenInstance();
+        }
+
+        return true;
+    }
+
     public static bool ReturnToStartMenu(string preferredMenuSceneName, string fallbackSceneName)
     {
         PrepareForStartMenuReturn();
@@ -36,7 +96,7 @@ public class Screen : MonoBehaviour
 
         InventoryToggleUI.ResetPersistentInstance();
         PlayerPersist.ResetPersistentInstance();
-        CanvasFollowPlayerPersist.ResetPersistentInstance();
+        EnemyAI.ResetPersistentInstance();
 
         if (!string.IsNullOrWhiteSpace(preferredMenuSceneName) && Application.CanStreamedLevelBeLoaded(preferredMenuSceneName))
         {
@@ -54,7 +114,7 @@ public class Screen : MonoBehaviour
     }
 
     // Tên scene (set trong Inspector)
-    public string gameSceneName = "Game";
+    public string gameSceneName = "Outside";
     public string menuSceneName = "MainMenu";
     public GameObject dialogueManager;
 
@@ -63,13 +123,20 @@ public class Screen : MonoBehaviour
     public bool pauseGameWhenStartScreenVisible = true;
     [SerializeField] private bool resetGameStateOnStart = true;
 
+    [Header("Death Screen")]
+    [SerializeField] private GameObject deathScreen;
+    [SerializeField] private bool pauseGameWhenDeathScreenVisible = true;
+
     [Header("Loading Screen")]
     [SerializeField] private Font loadingFont;
 
     private void Start()
     {
+        CacheSceneSettings();
         EnsureStartScreenReference();
         EnsureStartScreenButtonBindings();
+        EnsureDeathScreenReference();
+        EnsureDeathScreenButtonBindings();
 
         if (hasStartedThisSession)
         {
@@ -104,12 +171,19 @@ public class Screen : MonoBehaviour
     // Bấm nút Bắt đầu: tắt màn hình start và vào game
     public void StartGame()
     {
+        CacheSceneSettings();
         hasStartedThisSession = true;
+        isGameOver = false;
         Time.timeScale = 1f;
 
         if (startScreen != null)
         {
             startScreen.SetActive(false);
+        }
+
+        if (deathScreen != null)
+        {
+            deathScreen.SetActive(false);
         }
 
         if (resetGameStateOnStart)
@@ -128,6 +202,7 @@ public class Screen : MonoBehaviour
 
     public void ContinueGame()
     {
+        CacheSceneSettings();
         if (!SaveGameService.TryPrepareContinue(out string sceneToLoad))
         {
             Debug.LogWarning("Continue requested but no valid save was found. Falling back to StartGame.");
@@ -138,12 +213,18 @@ public class Screen : MonoBehaviour
         DialogueManager.ResetGlobalDialogueState();
 
         hasStartedThisSession = true;
+        isGameOver = false;
         autoStartDialogueOnLoad = false;
         Time.timeScale = 1f;
 
         if (startScreen != null)
         {
             startScreen.SetActive(false);
+        }
+
+        if (deathScreen != null)
+        {
+            deathScreen.SetActive(false);
         }
 
         InventoryToggleUI inventoryToggle = Object.FindFirstObjectByType<InventoryToggleUI>();
@@ -174,15 +255,40 @@ public class Screen : MonoBehaviour
     // Retry - chơi lại
     public void RetryGame()
     {
-        SceneManager.LoadScene(gameSceneName);
+        CacheSceneSettings();
+        hasStartedThisSession = true;
+        autoStartDialogueOnLoad = true;
+        isGameOver = false;
+        Time.timeScale = 1f;
+
+        if (deathScreen != null)
+        {
+            deathScreen.SetActive(false);
+        }
+
+        if (startScreen != null)
+        {
+            startScreen.SetActive(false);
+        }
+
+        ResetSessionState();
+        string sceneToLoad = ResolveStartSceneName();
+        SceneLoadingOverlay.LoadScene(sceneToLoad, loadingFont);
     }
 
     // Về menu chính
     public void BackToMenu()
     {
+        CacheSceneSettings();
         EnsureStartScreenReference();
         Time.timeScale = 1f;
 
+        if (deathScreen != null)
+        {
+            deathScreen.SetActive(false);
+        }
+
+        // Prefer showing the in-scene start screen first (same behavior as exit from selection screen).
         if (TryShowStartScreenInCurrentScene())
         {
             return;
@@ -195,6 +301,11 @@ public class Screen : MonoBehaviour
         }
 
         Debug.LogWarning("BackToMenu failed: no start screen in current scene and menu scene is not loadable.");
+    }
+
+    public void ReturnToMainMenu()
+    {
+        BackToMenu();
     }
 
     // Thoát game
@@ -217,6 +328,8 @@ public class Screen : MonoBehaviour
 
     private void ResetSessionState()
     {
+        isGameOver = false;
+
         PlayerPrefs.SetInt("HasPendingSpawn", 0);
         PlayerPrefs.DeleteKey("SpawnPointId");
         PlayerPrefs.DeleteKey("SpawnX");
@@ -229,6 +342,33 @@ public class Screen : MonoBehaviour
 
         InventoryToggleUI.ResetPersistentInstance();
         PlayerPersist.ResetPersistentInstance();
+        EnemyAI.ResetPersistentInstance();
+    }
+
+    private static void ResetSessionStateForFallbackRetry()
+    {
+        isGameOver = false;
+
+        PlayerPrefs.SetInt("HasPendingSpawn", 0);
+        PlayerPrefs.DeleteKey("SpawnPointId");
+        PlayerPrefs.DeleteKey("SpawnX");
+        PlayerPrefs.DeleteKey("SpawnY");
+        PlayerPrefs.Save();
+
+        SessionPlaytime.Reset();
+        GameWorldState.Reset();
+        SaveGameService.ClearPendingLoadState();
+
+        InventoryToggleUI.ResetPersistentInstance();
+        PlayerPersist.ResetPersistentInstance();
+        EnemyAI.ResetPersistentInstance();
+    }
+
+    private void CacheSceneSettings()
+    {
+        cachedGameSceneName = gameSceneName;
+        cachedMenuSceneName = menuSceneName;
+        cachedLoadingFont = loadingFont;
     }
 
     private string ResolveStartSceneName()
@@ -238,18 +378,29 @@ public class Screen : MonoBehaviour
             return gameSceneName;
         }
 
+        if (Application.CanStreamedLevelBeLoaded("Outside"))
+        {
+            return "Outside";
+        }
+
         string currentSceneName = SceneManager.GetActiveScene().name;
         return currentSceneName;
     }
 
     private void TryStartDialogue()
     {
-        if (dialogueManager == null)
+        DialogueManager manager = null;
+
+        if (dialogueManager != null)
         {
-            return;
+            manager = dialogueManager.GetComponent<DialogueManager>();
         }
 
-        DialogueManager manager = dialogueManager.GetComponent<DialogueManager>();
+        if (manager == null)
+        {
+            manager = DialogueManager.Resolve();
+        }
+
         if (manager != null)
         {
             manager.StartDialogue();
@@ -300,6 +451,11 @@ public class Screen : MonoBehaviour
 
         EnsureStartScreenButtonBindings();
 
+        if (deathScreen != null)
+        {
+            deathScreen.SetActive(false);
+        }
+
         startScreen.SetActive(true);
         Time.timeScale = pauseGameWhenStartScreenVisible ? 0f : 1f;
 
@@ -319,6 +475,147 @@ public class Screen : MonoBehaviour
         {
             startScreen = FindInLoadedScenesByName("StartScreen");
         }
+    }
+
+    private void ShowDeathScreen()
+    {
+        SceneLoadingOverlay.ForceHide();
+        EnsureDeathScreenReference();
+        EnsureDeathScreenButtonBindings();
+        BindDeathScreenButtonsFallback(deathScreen);
+        EnsureEventSystemExistsStatic();
+
+        if (deathScreen != null)
+        {
+            deathScreen.SetActive(true);
+
+            CanvasGroup group = deathScreen.GetComponent<CanvasGroup>();
+            if (group != null)
+            {
+                group.alpha = 1f;
+                group.interactable = true;
+                group.blocksRaycasts = true;
+            }
+        }
+
+        InventoryToggleUI inventoryToggle = Object.FindFirstObjectByType<InventoryToggleUI>();
+        if (inventoryToggle != null)
+        {
+            inventoryToggle.ForceCloseAllInventoryUI();
+            inventoryToggle.SetInventoryAccess(false);
+        }
+
+        PlayerController player = PlayerPersist.GetPlayerController();
+        if (player != null)
+        {
+            player.StopMovement();
+        }
+
+        if (pauseGameWhenDeathScreenVisible)
+        {
+            Time.timeScale = 0f;
+        }
+    }
+
+    private void EnsureEventSystemExists()
+    {
+        EnsureEventSystemExistsStatic();
+    }
+
+    private static void EnsureEventSystemExistsStatic()
+    {
+        EventSystem current = Object.FindFirstObjectByType<EventSystem>();
+        if (current != null && current.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        GameObject eventSystemObject = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+        eventSystemObject.tag = "Untagged";
+    }
+
+    private static Screen ResolveActiveScreenInstance()
+    {
+        if (activeInstance != null)
+        {
+            return activeInstance;
+        }
+
+        Screen found = Object.FindFirstObjectByType<Screen>();
+        if (found != null)
+        {
+            return found;
+        }
+
+        Screen[] allScreens = Resources.FindObjectsOfTypeAll<Screen>();
+        for (int i = 0; i < allScreens.Length; i++)
+        {
+            Screen candidate = allScreens[i];
+            if (candidate == null || candidate.gameObject == null)
+            {
+                continue;
+            }
+
+            if (!candidate.gameObject.scene.IsValid() || !candidate.gameObject.scene.isLoaded)
+            {
+                continue;
+            }
+
+            return candidate;
+        }
+
+        return null;
+    }
+
+    private static void ShowDeathScreenWithoutScreenInstance()
+    {
+        cachedGameSceneName = SceneManager.GetActiveScene().name;
+        SceneLoadingOverlay.ForceHide();
+        EnsureEventSystemExistsStatic();
+
+        InventoryToggleUI inventoryToggle = Object.FindFirstObjectByType<InventoryToggleUI>();
+        if (inventoryToggle != null)
+        {
+            inventoryToggle.ForceCloseAllInventoryUI();
+            inventoryToggle.SetInventoryAccess(false);
+        }
+
+        PlayerController player = PlayerPersist.GetPlayerController();
+        if (player != null)
+        {
+            player.StopMovement();
+        }
+
+        GameObject death = FindInLoadedScenesByName("DeathScreen");
+        if (death == null)
+        {
+            death = FindInLoadedScenesByName("GameOverScreen");
+        }
+
+        if (death == null)
+        {
+            death = FindInLoadedScenesByName("deathscreen");
+        }
+
+        if (death != null)
+        {
+            death.SetActive(true);
+            BindDeathScreenButtonsFallback(death);
+
+            CanvasGroup group = death.GetComponent<CanvasGroup>();
+            if (group != null)
+            {
+                group.alpha = 1f;
+                group.interactable = true;
+                group.blocksRaycasts = true;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("GameOver triggered but no Screen and no DeathScreen object were found in loaded scenes.");
+        }
+
+        Time.timeScale = 0f;
     }
 
     private void EnsureStartScreenButtonBindings()
@@ -363,6 +660,227 @@ public class Screen : MonoBehaviour
         }
     }
 
+    private void EnsureDeathScreenReference()
+    {
+        if (deathScreen != null)
+        {
+            return;
+        }
+
+        deathScreen = FindInLoadedScenesByName("DeathScreen");
+        if (deathScreen == null)
+        {
+            deathScreen = FindInLoadedScenesByName("GameOverScreen");
+        }
+
+        if (deathScreen == null)
+        {
+            deathScreen = FindInLoadedScenesByName("deathscreen");
+        }
+    }
+
+    private void EnsureDeathScreenButtonBindings()
+    {
+        if (deathScreen == null)
+        {
+            return;
+        }
+
+        BindDeathScreenButtonsFallback(deathScreen);
+
+        Button[] buttons = deathScreen.GetComponentsInChildren<Button>(true);
+        for (int b = 0; b < buttons.Length; b++)
+        {
+            Button button = buttons[b];
+            if (button == null || reboundButtons.Contains(button))
+            {
+                continue;
+            }
+
+            int eventCount = button.onClick.GetPersistentEventCount();
+            for (int i = 0; i < eventCount; i++)
+            {
+                string methodName = button.onClick.GetPersistentMethodName(i);
+                if (string.IsNullOrWhiteSpace(methodName))
+                {
+                    continue;
+                }
+
+                Object target = button.onClick.GetPersistentTarget(i);
+                if (target != null)
+                {
+                    continue;
+                }
+
+                if (!TryAddRuntimeBinding(button, methodName))
+                {
+                    continue;
+                }
+
+                reboundButtons.Add(button);
+                break;
+            }
+        }
+    }
+
+    private static void BindDeathScreenButtonsFallback(GameObject deathScreenObject)
+    {
+        if (deathScreenObject == null)
+        {
+            return;
+        }
+
+        Button[] buttons = deathScreenObject.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button button = buttons[i];
+            if (button == null || fallbackBoundButtons.Contains(button))
+            {
+                continue;
+            }
+
+            string label = GetButtonLabel(button);
+            if (IsRetryButton(label, button.name))
+            {
+                button.onClick.RemoveListener(RetryGameFromDeathScreen);
+                button.onClick.AddListener(RetryGameFromDeathScreen);
+                fallbackBoundButtons.Add(button);
+                continue;
+            }
+
+            if (IsReturnButton(label, button.name))
+            {
+                button.onClick.RemoveListener(ReturnToMainMenuFromDeathScreen);
+                button.onClick.AddListener(ReturnToMainMenuFromDeathScreen);
+                fallbackBoundButtons.Add(button);
+            }
+        }
+    }
+
+    private static void RetryGameFromDeathScreen()
+    {
+        CacheSceneSettingsForFallback();
+        hasStartedThisSession = true;
+        autoStartDialogueOnLoad = true;
+        isGameOver = false;
+        Time.timeScale = 1f;
+
+        SceneLoadingOverlay.ForceHide();
+        ResetSessionStateForFallbackRetry();
+
+        string sceneToLoad = ResolveRetrySceneName();
+        SceneLoadingOverlay.LoadScene(sceneToLoad, cachedLoadingFont);
+    }
+
+    private static void ReturnToMainMenuFromDeathScreen()
+    {
+        CacheSceneSettingsForFallback();
+        isGameOver = false;
+        hasStartedThisSession = false;  // This makes the start screen show when Outside loads
+        autoStartDialogueOnLoad = false;
+        Time.timeScale = 1f;
+
+        PlayerPrefs.SetInt("HasPendingSpawn", 0);
+        PlayerPrefs.DeleteKey("SpawnPointId");
+        PlayerPrefs.DeleteKey("SpawnX");
+        PlayerPrefs.DeleteKey("SpawnY");
+        PlayerPrefs.Save();
+
+        SessionPlaytime.Reset();
+        SaveGameService.ClearPendingLoadState();
+
+        InventoryToggleUI.ResetPersistentInstance();
+        PlayerPersist.ResetPersistentInstance();
+        EnemyAI.ResetPersistentInstance();
+
+        // Use SceneLoadingOverlay to show loading screen and prevent visible scene flash
+        SceneLoadingOverlay.LoadScene("Outside", cachedLoadingFont);
+    }
+
+    private static void CacheSceneSettingsForFallback()
+    {
+        if (!string.IsNullOrWhiteSpace(cachedGameSceneName) && !string.IsNullOrWhiteSpace(cachedMenuSceneName))
+        {
+            return;
+        }
+
+        Screen screen = activeInstance != null ? activeInstance : Object.FindFirstObjectByType<Screen>();
+        if (screen == null)
+        {
+            return;
+        }
+
+        cachedGameSceneName = screen.gameSceneName;
+        cachedMenuSceneName = screen.menuSceneName;
+        cachedLoadingFont = screen.loadingFont;
+    }
+
+    private static string ResolveGameSceneName()
+    {
+        if (!string.IsNullOrWhiteSpace(cachedGameSceneName) && Application.CanStreamedLevelBeLoaded(cachedGameSceneName))
+        {
+            return cachedGameSceneName;
+        }
+
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        return currentSceneName;
+    }
+
+    private static string ResolveRetrySceneName()
+    {
+        if (Application.CanStreamedLevelBeLoaded("Outside"))
+        {
+            return "Outside";
+        }
+
+        return ResolveGameSceneName();
+    }
+
+    private static string ResolveMenuSceneName()
+    {
+        if (Application.CanStreamedLevelBeLoaded("MainMenu"))
+        {
+            return "MainMenu";
+        }
+
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        return currentSceneName;
+    }
+
+    private static string GetButtonLabel(Button button)
+    {
+        if (button == null)
+        {
+            return string.Empty;
+        }
+
+        TMP_Text tmpText = button.GetComponentInChildren<TMP_Text>(true);
+        if (tmpText != null && !string.IsNullOrWhiteSpace(tmpText.text))
+        {
+            return tmpText.text;
+        }
+
+        Text legacyText = button.GetComponentInChildren<Text>(true);
+        if (legacyText != null && !string.IsNullOrWhiteSpace(legacyText.text))
+        {
+            return legacyText.text;
+        }
+
+        return button.name;
+    }
+
+    private static bool IsRetryButton(string label, string objectName)
+    {
+        string combined = (label + " " + objectName).ToLowerInvariant();
+        return combined.Contains("retry") || combined.Contains("restart") || combined.Contains("play again");
+    }
+
+    private static bool IsReturnButton(string label, string objectName)
+    {
+        string combined = (label + " " + objectName).ToLowerInvariant();
+        return combined.Contains("return") || combined.Contains("menu") || combined.Contains("main menu");
+    }
+
     private bool TryAddRuntimeBinding(Button button, string methodName)
     {
         switch (methodName)
@@ -375,6 +893,9 @@ public class Screen : MonoBehaviour
                 return true;
             case nameof(BackToMenu):
                 button.onClick.AddListener(BackToMenu);
+                return true;
+            case nameof(ReturnToMainMenu):
+                button.onClick.AddListener(ReturnToMainMenu);
                 return true;
             case nameof(QuitGame):
                 button.onClick.AddListener(QuitGame);

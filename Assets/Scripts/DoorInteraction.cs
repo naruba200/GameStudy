@@ -29,7 +29,7 @@ public class DoorInteraction : MonoBehaviour
 
         bool isDialogueActive = dialogueManager != null && dialogueManager.isDialogueActive;
 
-        // Prevent the same E press that closes dialogue from reopening it or triggering the door.
+        // Prevent the same F press that closes dialogue from reopening it or triggering the door.
         if (wasDialogueActive && !isDialogueActive)
         {
             wasDialogueActive = isDialogueActive;
@@ -48,7 +48,7 @@ public class DoorInteraction : MonoBehaviour
         // 🛑 Don't interrupt dialogue
         if (isDialogueActive) return;
 
-        if (Input.GetKeyDown(KeyCode.E))
+        if (Input.GetKeyDown(KeyCode.F))
         {
             interactCooldown = 0.2f; // 👈 KEY FIX
 

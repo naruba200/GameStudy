@@ -12,6 +12,11 @@ public class EnemyDialogueTrigger : MonoBehaviour
 
     void Update()
     {
+        if (player == null || dialogueManager == null)
+        {
+            return;
+        }
+
         float distance = Vector2.Distance(transform.position, player.position);
 
         if (distance <= triggerDistance && !hasTriggered)

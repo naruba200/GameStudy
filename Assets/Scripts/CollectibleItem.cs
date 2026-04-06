@@ -48,6 +48,17 @@ public class CollectibleItem : MonoBehaviour
             return;
         }
 
+        PickupEnemyActivator[] enemyActivators = GetComponentsInChildren<PickupEnemyActivator>(true);
+        if (enemyActivators.Length == 0)
+        {
+            enemyActivators = GetComponentsInParent<PickupEnemyActivator>(true);
+        }
+
+        for (int i = 0; i < enemyActivators.Length; i++)
+        {
+            enemyActivators[i].OnCollected(player);
+        }
+
         if (icon == null)
         {
             SpriteRenderer spriteRenderer = cachedSpriteRenderer != null ? cachedSpriteRenderer : GetComponent<SpriteRenderer>();

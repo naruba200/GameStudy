@@ -60,6 +60,16 @@ public class InventoryToggleUI : MonoBehaviour
         instance = null;
     }
 
+    public static bool IsInventoryOpen()
+    {
+        if (instance == null || instance.inventoryPanel == null)
+        {
+            return false;
+        }
+
+        return instance.inventoryPanel.activeSelf;
+    }
+
     private void Awake()
     {
         if (instance != null && instance != this)

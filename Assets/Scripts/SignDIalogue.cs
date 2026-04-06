@@ -20,7 +20,7 @@ public class SignDialogue : MonoBehaviour
         if (dialogueManager != null && dialogueManager.isDialogueActive)
             return;
 
-        if (dialogueManager != null && playerInRange && Input.GetKeyDown(KeyCode.E))
+        if (dialogueManager != null && playerInRange && Input.GetKeyDown(KeyCode.F))
         {
             dialogueManager.lines = lines;
             dialogueManager.StartDialogue();

@@ -6,6 +6,9 @@ using System.Collections;
 
 public class FadeController : MonoBehaviour
 {
+    private static FadeController instance;
+    private static bool isSceneTransitionFading;
+
     public Animator animator;
 
     private CanvasGroup canvasGroup;
@@ -45,6 +48,8 @@ public class FadeController : MonoBehaviour
         HideLoadingOverlay();
     }
 
+    public static bool IsSceneTransitionFading => isSceneTransitionFading;
+
     public void RequestFadeInOnNextScene()
     {
         fadeInOnNextScene = true;
@@ -52,9 +57,35 @@ public class FadeController : MonoBehaviour
 
     private bool TryResolveAnimator()
     {
+        if (animator != null && animator.gameObject == null)
+        {
+            animator = null;
+        }
+
         if (animator == null)
         {
             GameObject fadeObject = GameObject.Find("Fade");
+            if (fadeObject == null)
+            {
+                GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+                for (int i = 0; i < allObjects.Length; i++)
+                {
+                    GameObject candidate = allObjects[i];
+                    if (candidate == null || candidate.name != "Fade")
+                    {
+                        continue;
+                    }
+
+                    if (!candidate.scene.IsValid() || !candidate.scene.isLoaded)
+                    {
+                        continue;
+                    }
+
+                    fadeObject = candidate;
+                    break;
+                }
+            }
+
             if (fadeObject != null)
             {
                 animator = fadeObject.GetComponent<Animator>();
@@ -73,6 +104,11 @@ public class FadeController : MonoBehaviour
                     }
                 }
 
+                if (!fadeRoot.activeSelf)
+                {
+                    fadeRoot.SetActive(true);
+                }
+
                 DontDestroyOnLoad(fadeRoot);
             }
         }
@@ -89,6 +125,14 @@ public class FadeController : MonoBehaviour
 
     private void Awake()
     {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        instance = this;
+
         if (animator == null)
         {
             animator = GetComponent<Animator>();
@@ -104,10 +148,17 @@ public class FadeController : MonoBehaviour
             canvasGroup.alpha = 0f;
         }
 
-        animator.enabled = false;
-        animator.Play("Start", 0, 0f);
+        TrySetAnimatorEnabled(false);
 
-        DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(transform.root.gameObject);
+    }
+
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
+        }
     }
 
     public IEnumerator FadeOut()
@@ -117,13 +168,20 @@ public class FadeController : MonoBehaviour
             yield break;
         }
 
+        isSceneTransitionFading = true;
+
         if (canvasGroup != null)
         {
             canvasGroup.alpha = 1f;
         }
 
-        animator.enabled = true;
-        animator.Play("End", 0, 0f);
+        if (!EnableAnimatorForFade())
+        {
+            isSceneTransitionFading = false;
+            yield break;
+        }
+
+        TryPlayAnimatorState("End", true);
         yield return new WaitForSecondsRealtime(1f);
     }
 
@@ -131,6 +189,7 @@ public class FadeController : MonoBehaviour
     {
         if (!TryResolveAnimator())
         {
+            isSceneTransitionFading = false;
             yield break;
         }
 
@@ -139,10 +198,17 @@ public class FadeController : MonoBehaviour
             canvasGroup.alpha = 1f;
         }
 
-        animator.enabled = true;
-        animator.Play("Start", 0, 0f);
+        if (!EnableAnimatorForFade())
+        {
+            yield break;
+        }
+
+        TryPlayAnimatorState("Start", true);
         yield return new WaitForSecondsRealtime(1f);
-        animator.enabled = false;
+
+        TrySetAnimatorEnabled(false);
+
+        isSceneTransitionFading = false;
 
         if (canvasGroup != null)
         {
@@ -223,7 +289,7 @@ public class FadeController : MonoBehaviour
 
         if (animator != null)
         {
-            animator.enabled = false;
+            TrySetAnimatorEnabled(false);
         }
     }
 
@@ -302,5 +368,70 @@ public class FadeController : MonoBehaviour
         texture.SetPixel(0, 0, color);
         texture.Apply();
         return Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f));
+    }
+
+    private bool TryPlayAnimatorState(string stateName, bool resetTime)
+    {
+        if (animator == null || animator.gameObject == null)
+        {
+            return false;
+        }
+
+        if (!animator.gameObject.activeSelf)
+        {
+            animator.gameObject.SetActive(true);
+        }
+
+        if (!animator.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        float normalizedTime = resetTime ? 0f : float.NegativeInfinity;
+        try
+        {
+            animator.Play(stateName, 0, normalizedTime);
+            return true;
+        }
+        catch (MissingReferenceException)
+        {
+            animator = null;
+            return false;
+        }
+    }
+
+    private bool TrySetAnimatorEnabled(bool enabled)
+    {
+        if (animator == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            animator.enabled = enabled;
+            return true;
+        }
+        catch (MissingReferenceException)
+        {
+            animator = null;
+            return false;
+        }
+    }
+
+    private bool EnableAnimatorForFade()
+    {
+        if (!TryResolveAnimator() || animator == null)
+        {
+            return false;
+        }
+
+        if (animator.gameObject != null && !animator.gameObject.activeSelf)
+        {
+            animator.gameObject.SetActive(true);
+        }
+
+        animator.enabled = true;
+        return animator.gameObject != null && animator.gameObject.activeInHierarchy;
     }
 }

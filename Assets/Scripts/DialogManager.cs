@@ -107,7 +107,7 @@ public class DialogueManager : MonoBehaviour
 
     void Update()
     {
-        if (isDialogueActive && Input.GetKeyDown(KeyCode.E))
+        if (isDialogueActive && Input.GetKeyDown(KeyCode.F))
         {
             NextLine();
         }
