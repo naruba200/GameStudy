@@ -17,6 +17,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/House#2.unity
     guid: 289a06d2f6188c3478768c2351c4bf87
+  - enabled: 1
+    path: Assets/Scenes/Endgame.unity
+    guid: 82a643d3d84afa3478e4a229b0440b50
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

@@ -17,6 +17,7 @@ private AudioSource audioSource;
     private bool codePanelShown = false;
     private bool isSliding = false;
     private bool isSolved = false; // chỉ khóa sau khi nhập đúng mã
+    public bool IsSolved => isSolved; // để HidPathInteract kiểm tra
     private Vector3 targetPosition;
 
     void Start()
