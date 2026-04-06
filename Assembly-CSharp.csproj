@@ -53,6 +53,7 @@
     <Compile Include="Assets\Scripts\CollectibleItem.cs" />
     <Compile Include="Assets\Scripts\PlayerPersist.cs" />
     <Compile Include="Assets\Scripts\EnemyAI.cs" />
+    <Compile Include="Assets\Scripts\PlayerHideState.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\InventoryGridUI.cs" />
     <Compile Include="Assets\Scripts\SpawnPoint.cs" />
@@ -78,8 +79,11 @@
     <Compile Include="Assets\Scripts\GameWorldState.cs" />
     <Compile Include="Assets\Scripts\SelectionMenuController.cs" />
     <Compile Include="Assets\Scripts\SpawnManager.cs" />
+    <Compile Include="Assets\Scripts\SafeTransition.cs" />
     <Compile Include="Assets\Scripts\EnemyDialogueTrigger.cs" />
     <Compile Include="Assets\Scripts\Screen.cs" />
+    <Compile Include="Assets\Scripts\SafeInteraction.cs" />
+    <Compile Include="Assets\Scripts\LockerHideSpot.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

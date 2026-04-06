@@ -11,6 +11,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/House.unity
     guid: a54016cbce232b04f9c693dda2e4a54d
+  - enabled: 1
+    path: Assets/Scenes/SafeRoom.unity
+    guid: b34447a8e94c1ef4ab308c7d4c42ae3b
+  - enabled: 1
+    path: Assets/Scenes/SafeOpen.unity
+    guid: 177c5caa6c132254bae1ff713fa57995
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
